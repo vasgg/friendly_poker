@@ -1,0 +1,21 @@
+[project]
+name = "friendly_poker_bot"
+version = "0.2.0"
+description = "Bot for managing friendly poker sessions"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "aiogram>=3.15.0",
+    "aiosqlite>=0.20.0",
+    "pydantic>=2.9.2",
+    "pydantic-settings>=2.7.0",
+    "sqlalchemy>=2.0.36",
+    "greenlet>=3.1.1",
+]
+
+[tool.uv]
+package = true
+
+[project.scripts]
+bot-run = "bot.main:run_main"
+create-db = "database.tables_helper:run_main"
