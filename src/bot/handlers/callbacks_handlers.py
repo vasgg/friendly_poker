@@ -41,7 +41,7 @@ from bot.internal.callbacks import (
     PlayerCbData,
 )
 from bot.internal.dicts import buttons, texts
-from bot.internal.enums import (
+from bot.internal.context import (
     Amount,
     FinalGameAction,
     GameAction,
@@ -442,9 +442,9 @@ async def finish_game_handler(
                         callback_data.game_id, mvp_player.fullname, mvp_roi, db_session
                     )
                     await commit_debts_to_db(transactions, db_session)
-                    # await debt_informer_by_id(
-                    #     callback_data.game_id, callback, db_session
-                    # )
+                    await debt_informer_by_id(
+                        callback_data.game_id, callback, db_session
+                    )
                     await callback.bot.send_message(
                         chat_id=settings.bot.GROUP_ID, text=text
                     )

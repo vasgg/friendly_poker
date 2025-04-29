@@ -1,11 +1,24 @@
+from dataclasses import dataclass
 from enum import IntEnum, StrEnum, auto
 from aiogram.filters.state import State, StatesGroup
 
+from database.models import Debt
 
-class Stage(StrEnum):
-    DEV = auto()
-    PROD = auto()
 
+@dataclass(slots=True)
+class DebtData:
+    game_id: int
+    creditor_id: int
+    debtor_id: int
+    amount: int
+
+    def to_model(self) -> Debt:
+        return Debt(
+            game_id=self.game_id,
+            creditor_id=self.creditor_id,
+            debtor_id=self.debtor_id,
+            amount=self.amount,
+        )
 
 class Amount(IntEnum):
     FIVE_HUNDRED = 500
@@ -14,13 +27,6 @@ class Amount(IntEnum):
     TWO_THOUSAND = 2000
     TWO_AND_A_HALF_THOUSAND = 2500
     THREE_THOUSAND = 3000
-
-
-class States(StatesGroup):
-    ENTER_BUY_OUT = State()
-    ADD_ADMIN = State()
-    DELETE_ADMIN = State()
-    ADD_PHOTO = State()
 
 
 class GameStatus(StrEnum):
@@ -72,3 +78,10 @@ class DebtAction(IntEnum):
     MARK_AS_PAID = auto()
     MARK_AS_UNPAID = auto()
     COMPLETE_DEBT = auto()
+
+
+class States(StatesGroup):
+    ENTER_BUY_OUT = State()
+    ADD_ADMIN = State()
+    DELETE_ADMIN = State()
+    ADD_PHOTO = State()

@@ -17,14 +17,14 @@ from bot.handlers.states_handler import router as states_router
 from bot.handlers.debt_handlers import router as debts_router
 from bot.handlers.callbacks_handlers import router as callbacks_router
 from bot.handlers.errors_handler import router as errors_router
-from bot.internal.config_dicts import setup_logs_and_more
+from bot.internal.config_dicts import initial_setup
 
 from bot.config import settings
 from database.database_connector import get_db
 
 
 async def main():
-    setup_logs_and_more("friendly_poker_bot")
+    initial_setup("friendly_poker_bot")
 
     bot = Bot(
         token=settings.bot.TOKEN.get_secret_value(),

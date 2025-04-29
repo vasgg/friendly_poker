@@ -1,6 +1,6 @@
 from aiogram.filters.callback_data import CallbackData
 
-from bot.internal.enums import (
+from bot.internal.context import (
     DebtAction, FinalGameAction,
     GameAction,
     KeyboardMode,

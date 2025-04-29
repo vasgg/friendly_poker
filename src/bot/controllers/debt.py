@@ -1,16 +1,14 @@
 from datetime import datetime
-import heapq
 
 from aiogram.types import CallbackQuery
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from bot.config import settings
 from bot.controllers.user import get_user_from_db_by_tg_id
 from bot.internal.dicts import texts
+from bot.internal.context import DebtData
 from bot.internal.keyboards import get_paid_button
 from database.models import Debt, User
-
 
 
 async def get_debts(game_id, db_session):
@@ -19,41 +17,43 @@ async def get_debts(game_id, db_session):
     debts = result.unique().scalars().all()
     return debts
 
-async def equalizer(debtors: list[tuple[int, int]], creditors: list[tuple[int, int]], game_id: int) -> list[Debt]:
-    transactions = []
 
-    debtors_heap = [(abs(amount), user_id) for amount, user_id in debtors]
-    heapq.heapify(debtors_heap)
+def equalizer(balance_map: dict[int, int], game_id: int) -> list[DebtData]:
+    pairs = [(user, amount) for user, amount in balance_map.items() if amount != 0]
+    if not pairs:
+        return []
 
-    creditors_heap = [(-amount, user_id) for amount, user_id in creditors]
-    heapq.heapify(creditors_heap)
+    pairs.sort(key=lambda x: x[1])
+    users, balances = zip(*pairs)
+    balances = list(balances)
 
-    while debtors_heap and creditors_heap:
-        debt_amount, debtor_id = heapq.heappop(debtors_heap)
-        credit_amount_neg, creditor_id = heapq.heappop(creditors_heap)
+    min_result: list[DebtData] = []
 
-        credit_amount = -credit_amount_neg
-        amount_to_transfer = min(debt_amount, credit_amount)
+    def dfs(start: int, current: list[int], path: list[DebtData]):
+        nonlocal min_result
 
-        transactions.append(
-            Debt(
-                game_id=game_id,
-                creditor_id=creditor_id,
-                debtor_id=debtor_id,
-                amount=amount_to_transfer,
-            )
-        )
+        while start < len(current) and current[start] == 0:
+            start += 1
 
-        remaining_debt = debt_amount - amount_to_transfer
-        remaining_credit = credit_amount - amount_to_transfer
+        if start == len(current):
+            if not min_result or len(path) < len(min_result):
+                min_result = list(path)
+            return
 
-        if remaining_debt > 0:
-            heapq.heappush(debtors_heap, (remaining_debt, debtor_id))
-        if remaining_credit > 0:
-            heapq.heappush(creditors_heap, (-remaining_credit, creditor_id))
+        for i in range(start + 1, len(current)):
+            if current[start] * current[i] < 0:
+                amount = min(abs(current[start]), abs(current[i]))
+                new = current[:]
+                new[start] += amount if current[start] < 0 else -amount
+                new[i] += amount if current[i] < 0 else -amount
 
-    return transactions
+                debtor, creditor = (users[start], users[i]) if current[start] < 0 else (users[i], users[start])
+                path.append(DebtData(game_id, creditor, debtor, amount))
+                dfs(start + 1, new, path)
+                path.pop()
 
+    dfs(0, balances, [])
+    return min_result
 
 async def commit_debts_to_db(
     transactions: list[Debt], db_session: AsyncSession
@@ -74,13 +74,16 @@ async def debt_informer_by_id(
             "@" + creditor.username if creditor.username else creditor.fullname
         )
         debtor_username = "@" + debtor.username if debtor.username else debtor.fullname
-        await callback.bot.send_message(
+        msg = await callback.bot.send_message(
             chat_id=debtor.id,
             text=texts["debtor_personal_game_report"].format(
                 debt.game_id, debt.id, debt.amount / 100, creditor_username
             ),
             reply_markup=await get_paid_button(debt.id, debtor.id),
         )
+        debt.debt_message_id = msg.message_id
+        db_session.add(debt)
+        await db_session.flush()
         await callback.bot.send_message(
             chat_id=creditor.id,
             text=texts["creditor_personal_game_report"].format(
@@ -103,6 +106,7 @@ async def get_debt_by_id(debt_id: int, db_session: AsyncSession) -> Debt:
 
 
 async def mark_debt_as_unpaid(debt_id: int, db_session: AsyncSession) -> None:
+    from bot.config import settings
     stmt = (
         update(Debt)
         .where(Debt.id == debt_id)

@@ -7,7 +7,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.functions import coalesce, func
 
 from bot.controllers.debt import equalizer
-from bot.internal.enums import Amount, RecordUpdateMode
+from bot.internal.context import Amount, RecordUpdateMode
 from database.models import Debt, Record
 
 
@@ -88,18 +88,13 @@ async def debt_calculator(game_id: int, db_session: AsyncSession) -> list[Debt]:
     records_result = await db_session.execute(records_query)
     records = records_result.unique().scalars().all()
 
-    creditors = [
-        (record.net_profit, record.user_id)
+    balance_map = {
+        record.user_id: record.net_profit
         for record in records
-        if record.net_profit > 0
-    ]
-    debtors = [
-        (record.net_profit, record.user_id)
-        for record in records
-        if record.net_profit < 0
-    ]
-    return await equalizer(debtors, creditors, game_id)
+        if record.net_profit != 0
+    }
 
+    return [debt.to_model() for debt in equalizer(balance_map, game_id)]
 
 async def update_net_profit_and_roi(game_id: int, db_session: AsyncSession):
     stmt = (

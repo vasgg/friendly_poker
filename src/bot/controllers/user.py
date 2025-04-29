@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 async def add_user_to_db(user, db_session: AsyncSession) -> User:
     new_user = User(id=user.id, username=user.username, fullname=user.full_name)
     db_session.add(new_user)
-    await db_session.flush()
+    await db_session.commit()
     logger.info(f"New user created: {new_user}")
     return new_user
 

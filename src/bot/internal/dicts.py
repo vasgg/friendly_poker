@@ -1,12 +1,6 @@
 # fmt: off
 
 texts = {
-    'welcome': 'Greetings, {username} 👋\n\n'
-               'Here you can connect to a secure and fast internet without geographical restrictions!\n\n'
-               'By choosing us, you get:\n\n'
-               '🔐 Personal data privacy\n\n'
-               '🚀 High speed and unlimited traffic.',
-
     'abort_game_dialog': 'Abort game {}. Are you sure?',
     'abort_game_reply': 'Game {} aborted.',
     'admin_menu': 'Choose an action',
@@ -48,8 +42,8 @@ texts = {
     'debt_marked_as_paid': '<code>GAME {:02}. DEBT REPORT #{}:</>\n\n'
                            '{} marked debt as paid. Amount: {:.2f} GEL.\n'
                            'Do you receive payment?',
-    'debt_complete': '<code>GAME {:02}. DEBT REPORT #{}:</>\n\n'
-                     '{} marked debt as completed.\n',
+    'debt_complete': 'GAME {:02}. DEBT REPORT #{}:\n\n'
+                     '{} marked debt as completed. Amount: {:.2f} GEL.',
     'debt_incomplete': '<code>GAME {:02}. DEBT REPORT #{}:</>\n\n'
                        '{} marked debt as incompleted!\n',
 

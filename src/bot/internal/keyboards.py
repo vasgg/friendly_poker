@@ -12,7 +12,7 @@ from bot.internal.callbacks import (
     PlayerCbData,
 )
 from bot.internal.dicts import buttons
-from bot.internal.enums import (
+from bot.internal.context import (
     DebtAction, FinalGameAction,
     GameAction,
     GameStatus,
@@ -95,7 +95,7 @@ def users_multiselect_kb(
     return builder.as_markup()
 
 
-def game_menu_kb(status: GameStatus) -> InlineKeyboardMarkup:
+def game_menu_kb(status: GameStatus | None) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     match status:
         case GameStatus.ACTIVE:

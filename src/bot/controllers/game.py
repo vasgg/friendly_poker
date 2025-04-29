@@ -7,7 +7,7 @@ from sqlalchemy.orm import joinedload
 
 from bot.config import settings
 from bot.internal.dicts import texts
-from bot.internal.enums import GameStatus
+from bot.internal.context import GameStatus
 from database.models import Game
 
 logger = logging.getLogger(__name__)

@@ -4,12 +4,10 @@ from pydantic import SecretStr
 from pydantic_settings import BaseSettings
 
 from bot.internal.config_dicts import assign_config_dict
-from bot.internal.enums import Stage
 
 
 class BotConfig(BaseSettings):
     TOKEN: SecretStr
-    STAGE: Stage
     ADMINS: list[int]
     GROUP_ID: int
     TIMEZONE: ZoneInfo = ZoneInfo("Asia/Tbilisi")

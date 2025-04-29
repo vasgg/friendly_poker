@@ -5,6 +5,14 @@ from pathlib import Path
 
 from pydantic_settings import SettingsConfigDict
 
+
+def initial_setup(app_name: str):
+    Path("logs").mkdir(parents=True, exist_ok=True)
+    Path("photos").mkdir(parents=True, exist_ok=True)
+    logging_config = get_logging_config(app_name)
+    logging.config.dictConfig(logging_config)
+
+
 main_template = {
     "format": "%(asctime)s.%(msecs)03d | %(message)s",
     "datefmt": "%d.%m.%Y %H:%M:%S%z",
@@ -13,13 +21,6 @@ error_template = {
     "format": "%(asctime)s.%(msecs)03d [%(levelname)8s] [%(module)s:%(funcName)s:%(lineno)d] %(message)s",
     "datefmt": "%d.%m.%Y %H:%M:%S%z",
 }
-
-
-def setup_logs_and_more(app_name: str):
-    Path("logs").mkdir(parents=True, exist_ok=True)
-    Path("photos").mkdir(parents=True, exist_ok=True)
-    logging_config = get_logging_config(app_name)
-    logging.config.dictConfig(logging_config)
 
 
 def get_logging_config(app_name: str):

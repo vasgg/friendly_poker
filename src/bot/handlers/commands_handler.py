@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from bot.config import Settings
 from bot.controllers.game import get_active_game
 from bot.internal.dicts import texts
-from bot.internal.enums import GameStatus
+from bot.internal.context import GameStatus
 from bot.internal.keyboards import game_menu_kb
 
 from database.models import User

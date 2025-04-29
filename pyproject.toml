@@ -16,6 +16,11 @@ dependencies = [
 [tool.uv]
 package = true
 
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+]
+
 [project.scripts]
 bot-run = "bot.main:run_main"
 create-db = "database.tables_helper:run_main"

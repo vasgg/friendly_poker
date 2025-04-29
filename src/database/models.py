@@ -3,8 +3,8 @@ from datetime import datetime
 from sqlalchemy import BigInteger, ForeignKey, String, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
-from bot.config import settings
-from bot.internal.enums import GameStatus
+# from bot.config import settings
+from bot.internal.context import GameStatus
 
 
 class Base(DeclarativeBase):
@@ -13,7 +13,7 @@ class Base(DeclarativeBase):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     created_at: Mapped[datetime] = mapped_column(
-        default=datetime.now(settings.bot.TIMEZONE), server_default=func.now()
+        # default=lambda: datetime.now(settings.bot.TIMEZONE),
     )
 
 
@@ -142,6 +142,7 @@ class Debt(Base):
     game_id: Mapped[int] = mapped_column(ForeignKey("games.id"), nullable=False)
     creditor_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     debtor_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    debt_message_id: Mapped[int | None]
     amount: Mapped[int]
     is_paid: Mapped[bool] = mapped_column(default=False, server_default="0")
     paid_at: Mapped[datetime | None]

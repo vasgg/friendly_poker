@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from bot.controllers.record import update_record
 from bot.controllers.user import get_user_from_db_by_tg_id
 from bot.internal.dicts import texts
-from bot.internal.enums import RecordUpdateMode, States
+from bot.internal.context import RecordUpdateMode, States
 
 router = Router()
 
