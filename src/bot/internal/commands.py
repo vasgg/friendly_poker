@@ -2,7 +2,7 @@ from aiogram import Bot, types
 
 default_commands = [
     types.BotCommand(command="/start", description="first things first"),
-    types.BotCommand(command="/info", description="get some info"),
+    types.BotCommand(command="/settings", description="add payment requisites"),
     types.BotCommand(command="/admin", description="admin section"),
 ]
 

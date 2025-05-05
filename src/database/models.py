@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import BigInteger, ForeignKey, String, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
-# from bot.config import settings
+from bot.config import settings
 from bot.internal.context import GameStatus
 
 
@@ -13,7 +13,7 @@ class Base(DeclarativeBase):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     created_at: Mapped[datetime] = mapped_column(
-        # default=lambda: datetime.now(settings.bot.TIMEZONE),
+        default=lambda: datetime.now(settings.bot.TIMEZONE),
     )
 
 
@@ -26,17 +26,25 @@ class User(Base):
     fullname: Mapped[str]
     username: Mapped[str | None] = mapped_column(String(32))
     is_admin: Mapped[bool] = mapped_column(default=False, server_default="0")
+    IBAN: Mapped[str | None]
+    bank: Mapped[str | None]
+    name_surname: Mapped[str | None]
     games_played: Mapped[int] = mapped_column(default=0, server_default="0")
     last_time_played: Mapped[bool] = mapped_column(default=False, server_default="0")
 
     games_hosted: Mapped[list["Game"]] = relationship(
-        "Game", foreign_keys="[Game.host_id]", back_populates="host",  
+        "Game",
+        foreign_keys="[Game.host_id]",
+        back_populates="host",
     )
     games_administered: Mapped[list["Game"]] = relationship(
-        "Game", foreign_keys="[Game.admin_id]", back_populates="admin",  
+        "Game",
+        foreign_keys="[Game.admin_id]",
+        back_populates="admin",
     )
     records: Mapped[list["Record"]] = relationship(
-        "Record", back_populates="user",  
+        "Record",
+        back_populates="user",
     )
     debts_as_creditor: Mapped[list["Debt"]] = relationship(
         "Debt",
@@ -44,7 +52,9 @@ class User(Base):
         back_populates="creditor",
     )
     debts_as_debtor: Mapped[list["Debt"]] = relationship(
-        "Debt", foreign_keys="[Debt.debtor_id]", back_populates="debtor",  
+        "Debt",
+        foreign_keys="[Debt.debtor_id]",
+        back_populates="debtor",
     )
 
     def __str__(self):
@@ -103,13 +113,19 @@ class Game(Base):
         back_populates="games_administered",
     )
     host: Mapped["User"] = relationship(
-        "User", foreign_keys=[host_id], back_populates="games_hosted",  
+        "User",
+        foreign_keys=[host_id],
+        back_populates="games_hosted",
     )
     records: Mapped[list["Record"]] = relationship(
-        "Record", back_populates="game", cascade="all, delete-orphan",  
+        "Record",
+        back_populates="game",
+        cascade="all, delete-orphan",
     )
     debts: Mapped[list["Debt"]] = relationship(
-        "Debt", back_populates="game", cascade="all, delete-orphan",  
+        "Debt",
+        back_populates="game",
+        cascade="all, delete-orphan",
     )
 
 
@@ -123,8 +139,14 @@ class Record(Base):
     net_profit: Mapped[int | None]
     ROI: Mapped[int | None]
 
-    user: Mapped["User"] = relationship("User", back_populates="records",  )
-    game: Mapped["Game"] = relationship("Game", back_populates="records",  )
+    user: Mapped["User"] = relationship(
+        "User",
+        back_populates="records",
+    )
+    game: Mapped["Game"] = relationship(
+        "Game",
+        back_populates="records",
+    )
 
     def __lt__(self, other):
         return self.buy_in < other.buy_in
@@ -147,7 +169,10 @@ class Debt(Base):
     is_paid: Mapped[bool] = mapped_column(default=False, server_default="0")
     paid_at: Mapped[datetime | None]
 
-    game: Mapped["Game"] = relationship("Game", back_populates="debts",  )
+    game: Mapped["Game"] = relationship(
+        "Game",
+        back_populates="debts",
+    )
     creditor: Mapped["User"] = relationship(
         "User",
         foreign_keys=[creditor_id],

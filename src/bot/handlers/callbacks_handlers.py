@@ -4,12 +4,13 @@ from aiogram.types import CallbackQuery
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.config import settings
-from bot.controllers.debt import commit_debts_to_db, debt_informer_by_id
+from bot.controllers.debt import flush_debts_to_db, debt_informer_by_id
 from bot.controllers.game import (
     abort_game,
     commit_game_results_to_db,
     create_game,
     get_active_game,
+    get_game_by_id,
     get_group_game_report,
 )
 from bot.controllers.record import (
@@ -254,12 +255,15 @@ async def multiselect_further_handler(
     users = await get_all_users(db_session)
     match callback_data.mode:
         case KeyboardMode.NEW_GAME:
+            game = await get_game_by_id(callback_data.game_id, db_session)
+            host = await get_user_from_db_by_tg_id(game.host_id, db_session)
             chosen_users = data.get("chosen_for_new_game", list())
             await callback.bot.send_message(
                 chat_id=settings.bot.GROUP_ID,
                 text=texts["game_started_group"].format(
                     game_id=callback_data.game_id,
                     players_count=len(chosen_users),
+                    host_name=host.fullname,
                 ),
             )
             for user_id in chosen_users:
@@ -392,11 +396,6 @@ async def finish_game_handler(
                     game_id=callback_data.game_id,
                 ),
             )
-            text = texts["admin_players_with_0"].format(
-                callback_data.game_id, len(active_players)
-            )
-            await callback.message.answer(text=text)
-
         case FinalGameAction.ADD_PLAYERS_BUYOUT:
             players = await get_players_from_game(callback_data.game_id, db_session)
             await callback.message.answer(
@@ -419,6 +418,8 @@ async def finish_game_handler(
                 )
             else:
                 results = await check_game_balance(callback_data.game_id, db_session)
+                if not results.total_pot or not results.delta:
+                    await callback.message.answer(texts["check_game_balance_error"])
                 if results.delta != 0:
                     await callback.message.answer(
                         text=texts["exit_game_wrong_total_sum"].format(
@@ -441,7 +442,7 @@ async def finish_game_handler(
                     text = await get_group_game_report(
                         callback_data.game_id, mvp_player.fullname, mvp_roi, db_session
                     )
-                    await commit_debts_to_db(transactions, db_session)
+                    await flush_debts_to_db(transactions, db_session)
                     await debt_informer_by_id(
                         callback_data.game_id, callback, db_session
                     )

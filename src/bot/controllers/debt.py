@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.controllers.user import get_user_from_db_by_tg_id
 from bot.internal.dicts import texts
-from bot.internal.context import DebtData
+from bot.internal.schemas import DebtData
 from bot.internal.keyboards import get_paid_button
 from database.models import Debt, User
 
@@ -47,7 +47,11 @@ def equalizer(balance_map: dict[int, int], game_id: int) -> list[DebtData]:
                 new[start] += amount if current[start] < 0 else -amount
                 new[i] += amount if current[i] < 0 else -amount
 
-                debtor, creditor = (users[start], users[i]) if current[start] < 0 else (users[i], users[start])
+                debtor, creditor = (
+                    (users[start], users[i])
+                    if current[start] < 0
+                    else (users[i], users[start])
+                )
                 path.append(DebtData(game_id, creditor, debtor, amount))
                 dfs(start + 1, new, path)
                 path.pop()
@@ -55,7 +59,8 @@ def equalizer(balance_map: dict[int, int], game_id: int) -> list[DebtData]:
     dfs(0, balances, [])
     return min_result
 
-async def commit_debts_to_db(
+
+async def flush_debts_to_db(
     transactions: list[Debt], db_session: AsyncSession
 ) -> None:
     for transaction in transactions:
@@ -92,8 +97,6 @@ async def debt_informer_by_id(
         )
 
 
-
-
 async def mark_debt_as_paid(debt_id: int, db_session: AsyncSession) -> None:
     stmt = update(Debt).where(Debt.id == debt_id).values(is_paid=True)
     await db_session.execute(stmt)
@@ -107,6 +110,7 @@ async def get_debt_by_id(debt_id: int, db_session: AsyncSession) -> Debt:
 
 async def mark_debt_as_unpaid(debt_id: int, db_session: AsyncSession) -> None:
     from bot.config import settings
+
     stmt = (
         update(Debt)
         .where(Debt.id == debt_id)

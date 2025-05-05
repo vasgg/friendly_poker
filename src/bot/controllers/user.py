@@ -3,13 +3,17 @@ import logging
 from sqlalchemy import Result, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from bot.config import settings
 from database.models import Record, User
 
 logger = logging.getLogger(__name__)
 
 
 async def add_user_to_db(user, db_session: AsyncSession) -> User:
-    new_user = User(id=user.id, username=user.username, fullname=user.full_name)
+    is_admin = True if user.id == settings.bot.ADMIN else False
+    new_user = User(
+        id=user.id, fullname=user.full_name, username=user.username, is_admin=is_admin
+    )
     db_session.add(new_user)
     await db_session.commit()
     logger.info(f"New user created: {new_user}")

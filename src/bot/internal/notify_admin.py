@@ -12,7 +12,7 @@ async def on_startup(bot: Bot, settings: Settings):
     folder = os.path.basename(os.getcwd())
     try:
         await bot.send_message(
-            settings.bot.ADMINS[0],
+            settings.bot.ADMIN,
             f'<b>{folder.replace("_", " ")} started</b>\n\n/start',
             disable_notification=True,
         )
@@ -24,7 +24,7 @@ async def on_shutdown(bot: Bot, settings: Settings):
     folder = os.path.basename(os.getcwd())
     try:
         await bot.send_message(
-            settings.bot.ADMINS[0],
+            settings.bot.ADMIN,
             f'<b>{folder.replace("_", " ")} shutdown</b>',
             disable_notification=True,
         )

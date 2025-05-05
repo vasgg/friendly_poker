@@ -14,7 +14,7 @@ texts = {
     'admin_buyout_set_reply': 'Enter BUY-OUT value for {}',
     'admin_statistics': '...',
     'user_statistics': '...',
-    'insufficient_privileges': 'You cannot perform this action.',
+    'insufficient_privileges': 'You can\'t perform this action.',
     'choose_host': 'Choose a host.',
     'incorrect_buyout_value': 'Incorrect BUY-OUT value.',
 
@@ -22,30 +22,31 @@ texts = {
     'add_funds_selector': 'Select type of add funds operation',
     'add_funds_multiselect': 'Choose players to add 1000',
     'add_funds_to_single_player': 'Choose player to add funfs',
-
+    'check_game_balance_error': 'error while finding delta of total pot and buyouts',
     'user_add_funds_reply': '',
-    'game_started_group': 'The game {game_id:02d} with {players_count} players has started.',
+    'game_started_group': 'The game <b>{game_id:02d}</b> with <b>{players_count}</b> players has started.\n\n'
+                          'Host: <b>{host_name}</b>.',
     'finish_game_dialog': 'Choose an action',
     'buy_out_updated': 'Game {}. {} BUY-OUT set to {}.',
     'remained_players': 'Game {}. Players remained: {}.',
     'exit_game_wrong_total_sum': 'Impossible to finish the game, the buy-in and cash-out amounts do not match\n\n'
                                  'Total pot: {}\n'
                                  'Difference: {}',
-    'global_game_report': 'Game {:02} ended.\n\n'
-                          'Duration: {}\n'
-                          'Total pot: {}\n'
-                          'MVP: {} (ROI: {}%)',
-    'debtor_personal_game_report': '<code>GAME {:02}. DEBT REPORT #{}:</>\n\n'
-                                   'You owe <b>{:.2f} GEL</> to {}.',
-    'creditor_personal_game_report': '<code>GAME {:02}. DEBT REPORT #{}:</>\n\n'
-                                     '{} owes you {:.2f} GEL.',
-    'debt_marked_as_paid': '<code>GAME {:02}. DEBT REPORT #{}:</>\n\n'
-                           '{} marked debt as paid. Amount: {:.2f} GEL.\n'
+    'global_game_report': 'Game <b>{:02}</b> has ended.\n\n'
+                          'Duration: <b>{}</b>\n'
+                          'Total pot: <b>{}</b>\n'
+                          'MVP: <b>{}</b> (ROI: <b>{}%</b>)',
+    'debtor_personal_game_report': 'GAME <b>{:02}</b>. DEBT REPORT <b>#{}</b>:\n\n'
+                                   'You owe <b>{:.2f} GEL</> to <b>{}</b>.',
+    'creditor_personal_game_report': 'GAME <b>{:02}</b>. DEBT REPORT <b>#{}</b>:\n\n'
+                                     '<b>{}</b> owes you <b>{:.2f} GEL</b>.',
+    'debt_marked_as_paid': 'GAME <b>{:02}</b>. DEBT REPORT <b>#{}</b>:\n\n'
+                           '<b>{}</b> marked debt as paid. Amount: <b>{:.2f} GEL</b>.\n'
                            'Do you receive payment?',
-    'debt_complete': 'GAME {:02}. DEBT REPORT #{}:\n\n'
-                     '{} marked debt as completed. Amount: {:.2f} GEL.',
-    'debt_incomplete': '<code>GAME {:02}. DEBT REPORT #{}:</>\n\n'
-                       '{} marked debt as incompleted!\n',
+    'debt_complete': 'GAME <b>{:02}</b>. DEBT REPORT <b>#{}</b>:\n\n'
+                     '<b>{}</b> marked debt as completed. Amount: <b>{:.2f} GEL</b>.',
+    'debt_incomplete': 'GAME {:02}. DEBT REPORT #{}:\n\n'
+                       '<b>{}</b> marked debt as incompleted!\n',
 
 }
 
@@ -67,7 +68,6 @@ buttons = {
     'add_players_with_0': 'Add players with 0',
     'add_players_buyout': 'Add players BUYOUT',
     'finalize_game': 'Finalize game',
-
 }
 
 # fmt: on

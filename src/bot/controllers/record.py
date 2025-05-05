@@ -8,6 +8,7 @@ from sqlalchemy.sql.functions import coalesce, func
 
 from bot.controllers.debt import equalizer
 from bot.internal.context import Amount, RecordUpdateMode
+from bot.internal.schemas import GameBalanceData
 from database.models import Debt, Record
 
 
@@ -57,7 +58,11 @@ async def increase_player_buy_in(
 
 
 async def get_remained_players_in_game(game_id: int, db_session: AsyncSession) -> str:
-    query = select(Record).where(Record.game_id == game_id, Record.buy_out.is_(None))
+    query = (
+        select(Record)
+        .where(Record.game_id == game_id, Record.buy_out.is_(None))
+        .options(selectinload(Record.user))
+    )
     result = await db_session.execute(query)
     records = result.unique().scalars().all()
     remaining_players = [record.user for record in records]
@@ -65,21 +70,22 @@ async def get_remained_players_in_game(game_id: int, db_session: AsyncSession) -
     if remaining_players:
         for player in remaining_players:
             remaining_players_names.append(player.fullname)
-    return " ".join(remaining_players_names)
+    return ", ".join(remaining_players_names)
 
 
-async def check_game_balance(game_id: int, db_session: AsyncSession) -> namedtuple:
+async def check_game_balance(game_id: int, db_session: AsyncSession) -> GameBalanceData:
     total_pot_query = select(func.sum(Record.buy_in).filter(Record.game_id == game_id))
     total_buy_outs_query = select(
         func.sum(Record.buy_out).filter(Record.game_id == game_id)
     )
     total_pot_result = await db_session.execute(total_pot_query)
     total_buy_outs_result = await db_session.execute(total_buy_outs_query)
-    total_pot = total_pot_result.scalar()
-    total_buy_outs = total_buy_outs_result.scalar()
+    total_pot = total_pot_result.scalar_one_or_none()
+    total_buy_outs = total_buy_outs_result.scalar_one_or_none()
+    if not all((total_pot, total_buy_outs)):
+        return GameBalanceData(None, None)
     delta = total_pot - total_buy_outs
-    Results = namedtuple("Results", ["total_pot", "delta"])
-    results = Results(total_pot, delta)
+    results = GameBalanceData(total_pot, delta)
     return results
 
 
@@ -95,6 +101,7 @@ async def debt_calculator(game_id: int, db_session: AsyncSession) -> list[Debt]:
     }
 
     return [debt.to_model() for debt in equalizer(balance_map, game_id)]
+
 
 async def update_net_profit_and_roi(game_id: int, db_session: AsyncSession):
     stmt = (

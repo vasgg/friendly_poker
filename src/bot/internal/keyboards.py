@@ -4,7 +4,8 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from bot.internal.callbacks import (
     AbortDialogCbData,
     AddFundsOperationType,
-    DebtActionCbData, FinishGameCbData,
+    DebtActionCbData,
+    FinishGameCbData,
     GameMenuCbData,
     SinglePlayerActionCbData,
     CancelCbData,
@@ -13,7 +14,8 @@ from bot.internal.callbacks import (
 )
 from bot.internal.dicts import buttons
 from bot.internal.context import (
-    DebtAction, FinalGameAction,
+    DebtAction,
+    FinalGameAction,
     GameAction,
     GameStatus,
     KeyboardMode,
@@ -161,9 +163,14 @@ async def get_paid_button(debt_id, chat_id):
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text=f"DEBT {debt_id} PAID", callback_data=DebtActionCbData(
-                action=DebtAction.MARK_AS_PAID, debt_id=debt_id, chat_id=chat_id,
-            ).pack())],
+                    text=f"DEBT {debt_id} PAID",
+                    callback_data=DebtActionCbData(
+                        action=DebtAction.MARK_AS_PAID,
+                        debt_id=debt_id,
+                        chat_id=chat_id,
+                    ).pack(),
+                )
+            ],
         ]
     )
 
@@ -171,11 +178,25 @@ async def get_paid_button(debt_id, chat_id):
 async def get_paid_button_confirmation(debt_id, chat_id):
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="YEAH", callback_data=DebtActionCbData(
-                action=DebtAction.COMPLETE_DEBT, debt_id=debt_id, chat_id=chat_id,
-            ).pack())],
-            [InlineKeyboardButton(text="NOPE", callback_data=DebtActionCbData(
-                action=DebtAction.MARK_AS_UNPAID, debt_id=debt_id, chat_id=chat_id,
-            ).pack())],
+            [
+                InlineKeyboardButton(
+                    text="YEAH",
+                    callback_data=DebtActionCbData(
+                        action=DebtAction.COMPLETE_DEBT,
+                        debt_id=debt_id,
+                        chat_id=chat_id,
+                    ).pack(),
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="NOPE",
+                    callback_data=DebtActionCbData(
+                        action=DebtAction.MARK_AS_UNPAID,
+                        debt_id=debt_id,
+                        chat_id=chat_id,
+                    ).pack(),
+                )
+            ],
         ],
     )

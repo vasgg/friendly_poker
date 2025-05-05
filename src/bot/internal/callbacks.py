@@ -1,7 +1,8 @@
 from aiogram.filters.callback_data import CallbackData
 
 from bot.internal.context import (
-    DebtAction, FinalGameAction,
+    DebtAction,
+    FinalGameAction,
     GameAction,
     KeyboardMode,
     OperationType,
