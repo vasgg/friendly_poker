@@ -47,8 +47,12 @@ async def admin_command(
 async def settings_start(
     message: Message,
     state: FSMContext,
+    user: User,
 ):
     await state.clear()
+    user.IBAN = None
+    user.bank = None
+    user.name_surname = None
     first_field = ORDER[0]
     await state.set_state(getattr(SettingsForm, first_field))
     question = SETTINGS_QUESTIONS[first_field]
