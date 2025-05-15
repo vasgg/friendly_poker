@@ -8,7 +8,7 @@ from bot.config import settings
 from bot.controllers.debt import get_debt_by_id
 from bot.controllers.user import get_user_from_db_by_tg_id
 from bot.internal.callbacks import DebtActionCbData
-from bot.internal.dicts import texts
+from bot.internal.lexicon import texts
 from bot.internal.context import DebtAction
 from bot.internal.keyboards import get_paid_button_confirmation
 from database.models import User

@@ -47,6 +47,7 @@ texts = {
                      '<b>{}</b> marked debt as completed. Amount: <b>{:.2f} GEL</b>.',
     'debt_incomplete': 'GAME {:02}. DEBT REPORT #{}:\n\n'
                        '<b>{}</b> marked debt as incompleted!\n',
+    'settings_updated': 'Settings updated.',
 
 }
 
@@ -69,5 +70,14 @@ buttons = {
     'add_players_buyout': 'Add players BUYOUT',
     'finalize_game': 'Finalize game',
 }
+
+ORDER = ["IBAN", "bank", "name_surname"]
+
+SETTINGS_QUESTIONS = {
+    'IBAN': 'Enter your IBAN',
+    'bank': 'Enter your bank title',
+    'name_surname': 'Enter your first name and last name',
+}
+
 
 # fmt: on

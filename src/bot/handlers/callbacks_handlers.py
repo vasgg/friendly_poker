@@ -41,7 +41,7 @@ from bot.internal.callbacks import (
     MultiselectFurtherCbData,
     PlayerCbData,
 )
-from bot.internal.dicts import buttons, texts
+from bot.internal.lexicon import buttons, texts
 from bot.internal.context import (
     Amount,
     FinalGameAction,

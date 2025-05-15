@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
 from bot.config import settings
-from bot.internal.dicts import texts
+from bot.internal.lexicon import texts
 from bot.internal.context import GameStatus
 from database.models import Game
 

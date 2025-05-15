@@ -5,7 +5,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.controllers.user import get_user_from_db_by_tg_id
-from bot.internal.dicts import texts
+from bot.internal.lexicon import texts
 from bot.internal.schemas import DebtData
 from bot.internal.keyboards import get_paid_button
 from database.models import Debt, User

@@ -12,7 +12,7 @@ from bot.internal.callbacks import (
     MultiselectFurtherCbData,
     PlayerCbData,
 )
-from bot.internal.dicts import buttons
+from bot.internal.lexicon import buttons
 from bot.internal.context import (
     DebtAction,
     FinalGameAction,
