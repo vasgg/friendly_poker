@@ -4,6 +4,7 @@ from sqlalchemy import Result, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.config import settings
+from bot.internal.lexicon import ORDER, SETTINGS_QUESTIONS
 from database.models import Record, User
 
 logger = logging.getLogger(__name__)
@@ -65,3 +66,11 @@ async def get_users_with_buyout(game_id: int, db_session: AsyncSession) -> list[
     )
     result = await db_session.execute(query)
     return list(result.unique().scalars().all())
+
+
+async def ask_next_question(user: User) -> tuple:
+    for field in ORDER:
+        if getattr(user, field) is None:
+            question = SETTINGS_QUESTIONS[field]
+            return field, question
+    return None, None

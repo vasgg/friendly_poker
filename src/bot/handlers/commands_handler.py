@@ -6,8 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.config import Settings
 from bot.controllers.game import get_active_game
-from bot.internal.dicts import texts
-from bot.internal.context import GameStatus
+from bot.internal.lexicon import ORDER, SETTINGS_QUESTIONS, texts
+from bot.internal.context import GameStatus, SettingsForm
 from bot.internal.keyboards import game_menu_kb
 
 from database.models import User
@@ -41,3 +41,15 @@ async def admin_command(
     await message.answer(
         text=texts["admin_menu"], reply_markup=game_menu_kb(status=status)
     )
+
+
+@router.message(Command("settings"))
+async def settings_start(
+    message: Message,
+    state: FSMContext,
+):
+    await state.clear()
+    first_field = ORDER[0]
+    await state.set_state(getattr(SettingsForm, first_field))
+    question = SETTINGS_QUESTIONS[first_field]
+    await message.answer(question)

@@ -2,6 +2,12 @@ from enum import IntEnum, StrEnum, auto
 from aiogram.filters.state import State, StatesGroup
 
 
+class SettingsForm(StatesGroup):
+    IBAN = State()
+    bank = State()
+    name_surname = State()
+
+
 class Amount(IntEnum):
     FIVE_HUNDRED = 500
     ONE_THOUSAND = 1000
