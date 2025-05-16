@@ -17,7 +17,7 @@ class BotConfig(BaseSettings):
 
 class DBConfig(BaseSettings):
     FILE_NAME: str
-    echo: bool = True
+    echo: bool = False
 
     model_config = assign_config_dict(prefix="DB_")
 

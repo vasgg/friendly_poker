@@ -36,10 +36,10 @@ texts = {
                           'Total pot: <b>{}</b>\n'
                           'MVP: <b>{}</b> (ROI: <b>{}%</b>)',
     'debtor_personal_game_report': 'GAME <b>{:02}</b>. DEBT REPORT <b>#{}</b>:\n\n'
-                                   'You owe <b>{:.2f} GEL</> to <b>{}</b>.',
+                                   'You owe <b>{:.2f} GEL</b> to <b>{}</b>.',
     'debtor_personal_game_report_with_requisites': 'GAME <b>{:02}</b>. DEBT REPORT <b>#{}</b>:\n\n'
-                                                   'You owe <b>{:.2f} GEL</> to <b>{}</b>.\n\n'
-                                                   '<b>Requisites:<b>\n'
+                                                   'You owe <b>{:.2f} GEL</b> to <b>{}</b>.\n\n'
+                                                   '<b>Requisites:</b>\n'
                                                    '<b>Bank:</b> <code>{}</code>\n'
                                                    '<b>IBAN:</b> <code>{}</code>\n'
                                                    '<b>Name:</b> <code>{}</code>',

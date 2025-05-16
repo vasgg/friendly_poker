@@ -80,12 +80,20 @@ async def debt_informer_by_id(
         )
         debtor_username = "@" + debtor.username if debtor.username else debtor.fullname
         requisites = all((creditor.bank, creditor.IBAN, creditor.name_surname))
-        debtor_text = ...
+        debtor_text = texts["debtor_personal_game_report_with_requisites"].format(
+            debt.game_id,
+            debt.id,
+            debt.amount / 100,
+            creditor_username,
+            creditor.bank,
+            creditor.IBAN,
+            creditor.name_surname,
+        ) if requisites else texts["debtor_personal_game_report"].format(
+            debt.game_id, debt.id, debt.amount / 100, creditor_username
+        )
         msg = await callback.bot.send_message(
             chat_id=debtor.id,
-            text=texts["debtor_personal_game_report"].format(
-                debt.game_id, debt.id, debt.amount / 100, creditor_username
-            ),
+            text=debtor_text,
             reply_markup=await get_paid_button(debt.id, debtor.id),
         )
         debt.debt_message_id = msg.message_id
