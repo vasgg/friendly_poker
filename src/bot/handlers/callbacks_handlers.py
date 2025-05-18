@@ -1,3 +1,5 @@
+from logging import getLogger
+
 from aiogram import Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
@@ -62,6 +64,7 @@ from bot.internal.keyboards import (
 from database.models import Game, User
 
 router = Router()
+logger = getLogger(__name__)
 
 
 @router.callback_query(SinglePlayerActionCbData.filter())
@@ -114,8 +117,6 @@ async def single_player_handler(
                 text=texts["admin_set_buyout_dialog"].format(player.fullname),
             )
             await state.set_state(States.ENTER_BUY_OUT)
-        case _:
-            assert False, "Unexpected mode"
 
 
 @router.callback_query(PlayerCbData.filter())
@@ -157,8 +158,6 @@ async def players_multiselect_handler(
             await state.update_data(chosen_for_add_1000=chosen_users)
         case KeyboardMode.PLAYERS_WITH_0:
             await state.update_data(chosen_for_players_with_0=chosen_users)
-        case _:
-            assert False, "Unexpected mode"
     await callback.message.edit_reply_markup(
         reply_markup=users_multiselect_kb(
             players=users,

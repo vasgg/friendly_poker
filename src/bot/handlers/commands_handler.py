@@ -1,10 +1,9 @@
 from aiogram import Router
-from aiogram.filters import Command, CommandObject, CommandStart
+from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from bot.config import Settings
 from bot.controllers.game import get_active_game
 from bot.internal.lexicon import ORDER, SETTINGS_QUESTIONS, texts
 from bot.internal.context import GameStatus, SettingsForm
@@ -19,10 +18,7 @@ router = Router()
 @router.message(CommandStart())
 async def command_handler(
     message: Message,
-    command: CommandObject,
     user: User,
-    settings: Settings,
-    db_session: AsyncSession,
 ) -> None:
     await message.answer(
         text=f"hey, {user.fullname}",
@@ -31,7 +27,7 @@ async def command_handler(
 
 @router.message(Command("admin"))
 async def admin_command(
-    message: Message, user: User, state: FSMContext, db_session: AsyncSession
+    message: Message, user: User, db_session: AsyncSession
 ) -> None:
     if not user.is_admin:
         await message.answer(text=texts["insufficient_privileges"])

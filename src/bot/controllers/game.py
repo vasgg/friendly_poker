@@ -55,8 +55,7 @@ async def commit_game_results_to_db(
     game_id: int, total_pot: int, mvp_id: int, db_session: AsyncSession
 ) -> None:
     now = datetime.now(settings.bot.TIMEZONE)
-    game: Game = await get_active_game(db_session)
-
+    game: Game = await get_game_by_id(game_id, db_session)
     start_time: datetime = game.created_at
     if start_time.tzinfo is None:
         start_time = start_time.replace(tzinfo=settings.bot.TIMEZONE)
