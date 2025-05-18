@@ -10,7 +10,7 @@ class BotConfig(BaseSettings):
     TOKEN: SecretStr
     ADMIN: int
     GROUP_ID: int
-    TIMEZONE: ZoneInfo = ZoneInfo("Asia/Tbilisi")
+    TIMEZONE: ZoneInfo = ZoneInfo("UTC")
 
     model_config = assign_config_dict(prefix="BOT_")
 

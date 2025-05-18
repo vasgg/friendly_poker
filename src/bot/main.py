@@ -4,7 +4,7 @@ import logging
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
-from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.fsm.storage.memory import MemoryStorage, SimpleEventIsolation
 
 from bot.middlewares.auth_middleware import AuthMiddleware
 from bot.middlewares.logging_middleware import LoggingMiddleware
@@ -32,7 +32,7 @@ async def main():
     )
 
     storage = MemoryStorage()
-    dispatcher = Dispatcher(storage=storage, settings=settings)
+    dispatcher = Dispatcher(events_isolation=SimpleEventIsolation(), storage=storage, settings=settings)
     db = get_db()
 
     dispatcher.update.outer_middleware(UpdatesDumperMiddleware())
@@ -54,9 +54,8 @@ async def main():
         debts_router,
     )
 
-    await dispatcher.start_polling(bot)
     logging.info("friendly poker bot started")
-
+    await dispatcher.start_polling(bot)
 
 def run_main():
     run(main())

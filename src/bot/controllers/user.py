@@ -3,15 +3,14 @@ import logging
 from sqlalchemy import Result, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from bot.config import settings
 from bot.internal.lexicon import ORDER, SETTINGS_QUESTIONS
 from database.models import Record, User
+from aiogram.types import User as AiogramUser
 
 logger = logging.getLogger(__name__)
 
 
-async def add_user_to_db(user, db_session: AsyncSession) -> User:
-    is_admin = True if user.id == settings.bot.ADMIN else False
+async def add_user_to_db(user: AiogramUser, db_session: AsyncSession, is_admin: bool = False) -> User:
     new_user = User(
         id=user.id, fullname=user.full_name, username=user.username, is_admin=is_admin
     )

@@ -17,7 +17,6 @@ async def get_active_game(db_session: AsyncSession) -> Game | None:
     query = (
         select(Game)
         .where(Game.status == GameStatus.ACTIVE)
-        .order_by(Game.created_at.desc())
         .options(joinedload(Game.records))
     )
     result = await db_session.execute(query)

@@ -97,7 +97,6 @@ async def debt_informer_by_id(
             reply_markup=await get_paid_button(debt.id, debtor.id),
         )
         debt.debt_message_id = msg.message_id
-        db_session.add(debt)
         await db_session.flush()
         await callback.bot.send_message(
             chat_id=creditor.id,
@@ -113,9 +112,7 @@ async def mark_debt_as_paid(debt_id: int, db_session: AsyncSession) -> None:
 
 
 async def get_debt_by_id(debt_id: int, db_session: AsyncSession) -> Debt:
-    query = select(Debt).where(Debt.id == debt_id)
-    result = await db_session.execute(query)
-    return result.unique().scalar_one()
+    return await db_session.get_one(Debt, debt_id)
 
 
 async def mark_debt_as_unpaid(debt_id: int, db_session: AsyncSession) -> None:

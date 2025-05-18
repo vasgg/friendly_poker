@@ -1,9 +1,8 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import BigInteger, ForeignKey, String, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
-from bot.config import settings
 from bot.internal.context import GameStatus
 
 
@@ -13,7 +12,7 @@ class Base(DeclarativeBase):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     created_at: Mapped[datetime] = mapped_column(
-        default=lambda: datetime.now(settings.bot.TIMEZONE),
+        default=lambda: datetime.now(UTC),
     )
 
 
