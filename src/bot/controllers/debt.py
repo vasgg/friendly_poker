@@ -53,7 +53,7 @@ def equalizer(balance_map: dict[int, int], game_id: int) -> list[DebtData]:
                     else (users[i], users[start])
                 )
                 path.append(DebtData(game_id, creditor, debtor, amount))
-                dfs(start + 1, new, path)
+                dfs(start, new, path)
                 path.pop()
 
     dfs(0, balances, [])
