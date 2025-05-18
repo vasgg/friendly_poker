@@ -299,6 +299,7 @@ async def multiselect_further_handler(
             await state.update_data(chosen_for_add_players=list())
         case KeyboardMode.PLAYERS_ADD_1000:
             chosen_users = data.get("chosen_for_add_1000", list())
+            names = []
             for user_id in chosen_users:
                 await increase_player_buy_in(
                     user_id=user_id,
@@ -306,8 +307,10 @@ async def multiselect_further_handler(
                     amount=Amount.ONE_THOUSAND,
                     db_session=db_session,
                 )
+                user = await get_user_from_db_by_tg_id(user_id, db_session)
+                names.append(user.fullname)
             text = texts["admin_1000_added_to_players"].format(
-                callback_data.game_id, len(chosen_users)
+                callback_data.game_id, len(chosen_users), "\n".join(names)
             )
             await state.update_data(chosen_for_add_1000=list())
         case KeyboardMode.PLAYERS_WITH_0:
@@ -417,8 +420,9 @@ async def finish_game_handler(
                 )
             else:
                 results = await check_game_balance(callback_data.game_id, db_session)
-                if not results.total_pot or not results.delta:
+                if results.total_pot is None or results.delta is None:
                     await callback.message.answer(texts["check_game_balance_error"])
+                    return
                 if results.delta != 0:
                     await callback.message.answer(
                         text=texts["exit_game_wrong_total_sum"].format(
