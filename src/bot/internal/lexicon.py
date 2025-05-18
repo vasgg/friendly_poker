@@ -5,7 +5,7 @@ texts = {
     'admin_menu': 'Choose an action',
     'admin_game_created': 'Game {} started.',
     'admin_players_added': 'Added {} players to game {}.',
-    'admin_1000_added_to_players': 'Game {}. Added 1000 to {} players.',
+    'admin_1000_added_to_players': 'Game {}. Added 1000 to {} players:\n\n<b>{}</b>',
     'admin_players_with_0': 'Game {}. BUY-OUT set to 0 on {} players.',
     'admin_players_with_0_dialog': 'Choose players to set BUY-OUT to 0',
     'admin_players_buyout_dialog': 'Choose player to set BUY-OUT',
@@ -34,7 +34,7 @@ texts = {
     'global_game_report': 'Game <b>{:02}</b> has ended.\n\n'
                           'Duration: <b>{}</b>\n'
                           'Total pot: <b>{}</b>\n'
-                          'MVP: <b>{}</b> (ROI: <b>{}%</b>)',
+                          'MVP: <b>{}</b> (ROI: <b>{:.2f}%</b>)',
     'debtor_personal_game_report': 'GAME <b>{:02}</b>. DEBT REPORT <b>#{}</b>:\n\n'
                                    'You owe <b>{:.2f} GEL</b> to <b>{}</b>.',
     'debtor_personal_game_report_with_requisites': 'GAME <b>{:02}</b>. DEBT REPORT <b>#{}</b>:\n\n'
@@ -49,9 +49,9 @@ texts = {
                            '<b>{}</b> marked debt as paid. Amount: <b>{:.2f} GEL</b>.\n'
                            'Do you receive payment?',
     'debt_complete': 'GAME <b>{:02}</b>. DEBT REPORT <b>#{}</b>:\n\n'
-                     '<b>{}</b> marked debt as completed. Amount: <b>{:.2f} GEL</b>.',
+                     '<b>{}</b> marked debt as paid. Amount: <b>{:.2f} GEL</b>.',
     'debt_incomplete': 'GAME {:02}. DEBT REPORT #{}:\n\n'
-                       '<b>{}</b> marked debt as incompleted!\n',
+                       '<b>{}</b> marked debt as unpaid!\n',
     'settings_updated': 'Settings updated.',
 
 }
