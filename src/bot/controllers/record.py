@@ -1,4 +1,3 @@
-from collections import namedtuple
 import logging
 
 from sqlalchemy import select, update
@@ -82,7 +81,7 @@ async def check_game_balance(game_id: int, db_session: AsyncSession) -> GameBala
     total_buy_outs_result = await db_session.execute(total_buy_outs_query)
     total_pot = total_pot_result.scalar_one_or_none()
     total_buy_outs = total_buy_outs_result.scalar_one_or_none()
-    if not all((total_pot, total_buy_outs)):
+    if total_pot is None or total_buy_outs is None:
         return GameBalanceData(None, None)
     delta = total_pot - total_buy_outs
     results = GameBalanceData(total_pot, delta)
