@@ -35,7 +35,7 @@ async def get_all_users(db_session: AsyncSession) -> list[User]:
     return list(result.unique().scalars().all())
 
 
-async def get_last_played_users(db_session: AsyncSession) -> list[User.id]:
+async def get_last_played_users(db_session: AsyncSession) -> list[int]:
     query = select(User.id).where(User.last_time_played)
     result: Result = await db_session.execute(query)
     return list(result.unique().scalars().all())

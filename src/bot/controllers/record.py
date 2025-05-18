@@ -115,9 +115,11 @@ async def update_net_profit_and_roi(game_id: int, db_session: AsyncSession):
     for record in records:
         if record.buy_in is not None and record.buy_out is not None:
             record.net_profit = record.buy_out - record.buy_in
-            record.ROI = (
-                (record.net_profit / record.buy_in * 100) if record.buy_in > 0 else None
-            )
+            if record.buy_in > 0:
+                roi = (record.net_profit / record.buy_in) * 100
+                record.ROI = round(roi, 2)
+            else:
+                record.ROI = None
             db_session.add(record)
     await db_session.flush()
 
