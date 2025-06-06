@@ -32,7 +32,9 @@ async def main():
     )
 
     storage = MemoryStorage()
-    dispatcher = Dispatcher(events_isolation=SimpleEventIsolation(), storage=storage, settings=settings)
+    dispatcher = Dispatcher(
+        events_isolation=SimpleEventIsolation(), storage=storage, settings=settings
+    )
     db = get_db()
 
     dispatcher.update.outer_middleware(UpdatesDumperMiddleware())
@@ -56,6 +58,7 @@ async def main():
 
     logging.info("friendly poker bot started")
     await dispatcher.start_polling(bot)
+
 
 def run_main():
     run(main())

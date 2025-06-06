@@ -60,9 +60,7 @@ def equalizer(balance_map: dict[int, int], game_id: int) -> list[DebtData]:
     return min_result
 
 
-async def flush_debts_to_db(
-    transactions: list[Debt], db_session: AsyncSession
-) -> None:
+async def flush_debts_to_db(transactions: list[Debt], db_session: AsyncSession) -> None:
     for transaction in transactions:
         db_session.add(transaction)
     await db_session.flush()
@@ -80,16 +78,20 @@ async def debt_informer_by_id(
         )
         debtor_username = "@" + debtor.username if debtor.username else debtor.fullname
         requisites = all((creditor.bank, creditor.IBAN, creditor.name_surname))
-        debtor_text = texts["debtor_personal_game_report_with_requisites"].format(
-            debt.game_id,
-            debt.id,
-            debt.amount / 100,
-            creditor_username,
-            creditor.bank,
-            creditor.IBAN,
-            creditor.name_surname,
-        ) if requisites else texts["debtor_personal_game_report"].format(
-            debt.game_id, debt.id, debt.amount / 100, creditor_username
+        debtor_text = (
+            texts["debtor_personal_game_report_with_requisites"].format(
+                debt.game_id,
+                debt.id,
+                debt.amount / 100,
+                creditor_username,
+                creditor.bank,
+                creditor.IBAN,
+                creditor.name_surname,
+            )
+            if requisites
+            else texts["debtor_personal_game_report"].format(
+                debt.game_id, debt.id, debt.amount / 100, creditor_username
+            )
         )
         msg = await callback.bot.send_message(
             chat_id=debtor.id,

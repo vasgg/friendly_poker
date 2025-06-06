@@ -26,9 +26,7 @@ async def command_handler(
 
 
 @router.message(Command("admin"))
-async def admin_command(
-    message: Message, user: User, db_session: AsyncSession
-) -> None:
+async def admin_command(message: Message, user: User, db_session: AsyncSession) -> None:
     if not user.is_admin:
         await message.answer(text=texts["insufficient_privileges"])
         return

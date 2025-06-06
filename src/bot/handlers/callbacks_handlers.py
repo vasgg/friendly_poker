@@ -336,8 +336,6 @@ async def multiselect_further_handler(
 async def add_funds_handler(
     callback: CallbackQuery,
     callback_data: AddFundsOperationType,
-    user: User,
-    state: FSMContext,
     db_session: AsyncSession,
 ) -> None:
     await callback.answer()

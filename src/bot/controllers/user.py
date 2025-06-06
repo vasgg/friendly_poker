@@ -10,7 +10,9 @@ from aiogram.types import User as AiogramUser
 logger = logging.getLogger(__name__)
 
 
-async def add_user_to_db(user: AiogramUser, db_session: AsyncSession, is_admin: bool = False) -> User:
+async def add_user_to_db(
+    user: AiogramUser, db_session: AsyncSession, is_admin: bool = False
+) -> User:
     new_user = User(
         id=user.id, fullname=user.full_name, username=user.username, is_admin=is_admin
     )
