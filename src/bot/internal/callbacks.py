@@ -10,14 +10,14 @@ from bot.internal.context import (
 )
 
 
-class PlayerCbData(CallbackData, prefix="player"):
+class PlayerCbData(CallbackData, prefix="p"):
     player_id: int
     game_id: int
     name: str
     mode: KeyboardMode
 
 
-class SinglePlayerActionCbData(CallbackData, prefix="single_player_action"):
+class SinglePlayerActionCbData(CallbackData, prefix="single_p_action"):
     mode: SinglePlayerActionType
     player_id: int
     game_id: int | None = None
@@ -27,7 +27,7 @@ class GameMenuCbData(CallbackData, prefix="game_menu"):
     action: GameAction
 
 
-class MultiselectFurtherCbData(CallbackData, prefix="multiselect_further"):
+class MultiselectFurtherCbData(CallbackData, prefix="mltslct_further"):
     mode: KeyboardMode
     game_id: int
 
@@ -37,7 +37,7 @@ class AddFundsOperationType(CallbackData, prefix="add_funds_type"):
     game_id: int
 
 
-class CancelCbData(CallbackData, prefix="multiselect_cancel"):
+class CancelCbData(CallbackData, prefix="mltslct_cancel"):
     pass
 
 

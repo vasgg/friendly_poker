@@ -23,14 +23,14 @@ class GameStatus(StrEnum):
     ABORTED = auto()
 
 
-class KeyboardMode(StrEnum):
+class KeyboardMode(IntEnum):
     NEW_GAME = auto()
     ADD_PLAYERS = auto()
     PLAYERS_ADD_1000 = auto()
     PLAYERS_WITH_0 = auto()
 
 
-class GameAction(StrEnum):
+class GameAction(IntEnum):
     ADD_PLAYERS = auto()
     START_GAME = auto()
     FINISH_GAME = auto()
@@ -40,23 +40,23 @@ class GameAction(StrEnum):
     STATISTICS = auto()
 
 
-class RecordUpdateMode(StrEnum):
+class RecordUpdateMode(IntEnum):
     UPDATE_BUY_IN = auto()
     UPDATE_BUY_OUT = auto()
 
 
-class OperationType(StrEnum):
+class OperationType(IntEnum):
     MULTISELECT = auto()
     SINGLESELECT = auto()
 
 
-class SinglePlayerActionType(StrEnum):
+class SinglePlayerActionType(IntEnum):
     CHOOSE_HOST = auto()
     ADD_FUNDS = auto()
     SET_BUY_OUT = auto()
 
 
-class FinalGameAction(StrEnum):
+class FinalGameAction(IntEnum):
     ADD_PLAYERS_WITH_0 = auto()
     ADD_PLAYERS_BUYOUT = auto()
     FINALIZE_GAME = auto()
