@@ -163,7 +163,7 @@ async def get_paid_button(debt_id, chat_id):
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text=f"DEBT {debt_id} PAID",
+                    text=f"DEBT PAID",
                     callback_data=DebtActionCbData(
                         action=DebtAction.MARK_AS_PAID,
                         debt_id=debt_id,
