@@ -1,6 +1,8 @@
+from contextlib import suppress
 from datetime import datetime
 
 from aiogram import Router
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import CallbackQuery
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -46,7 +48,8 @@ async def debt_handler(
         case DebtAction.MARK_AS_UNPAID:
             ...
         case DebtAction.COMPLETE_DEBT:
-            await callback.message.delete()
+            with suppress(TelegramBadRequest):
+                await callback.message.delete()
             debt.is_paid = True
             debt.paid_at = datetime.now(settings.bot.TIMEZONE)
             db_session.add(debt)
@@ -58,6 +61,7 @@ async def debt_handler(
                     debt.game_id, debt.id, creditor_username, debt.amount / 100
                 ),
             )
-            await callback.bot.delete_message(
-                chat_id=debtor.id, message_id=debt.debt_message_id
-            )
+            with suppress(TelegramBadRequest):
+                await callback.bot.delete_message(
+                    chat_id=debtor.id, message_id=debt.debt_message_id
+                )
