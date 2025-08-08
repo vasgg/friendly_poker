@@ -24,6 +24,11 @@ async def create_record(game_id: int, user_id: int, db_session: AsyncSession) ->
     return new_record
 
 
+async def get_record(game_id: int, user_id: int, db_session: AsyncSession) -> Record:
+    query = select(Record).filter(Record.game_id == game_id, Record.user_id == user_id)
+    result = await db_session.execute(query)
+    return result.unique().scalar_one()
+
 async def update_record(
     game_id: int,
     user_id: int,

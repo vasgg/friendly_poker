@@ -53,6 +53,24 @@ texts = {
     'debt_incomplete': 'GAME {:02}. DEBT REPORT #{}:\n\n'
                        '<b>{}</b> marked debt as unpaid!\n',
     'settings_updated': 'Settings updated.',
+    'player_stats_ingame': 'Game <b>{:02}</b> in progress\n\n'
+                           'Current BUY-IN: <b>{}</b>\n\n'
+                           '<b>Stats:</b>\n'
+                           'Games played: <b>{}</b>\n'
+                           'Games hosted: <b>{}</b>\n'
+                           'MVP awards: <b>{}</b>\n'
+                           'Total BUY-IN: <b>{}</b>\n'
+                           'Total BUY-OUT: <b>{}</b>\n'
+                           'Total ROI: <b>{}</b>\n',
+    'player_stats_outgame': '<b>Stats:</b>\n'
+                            'Games played: <b>{}</b>\n'
+                            'Games hosted: <b>{}</b>\n'
+                            'MVP awards: <b>{}</b>\n'
+                            'Total BUY-IN: <b>{}</b>\n'
+                            'Total BUY-OUT: <b>{}</b>\n'
+                            'Total ROI: <b>{}</b>\n',
+    'admin_stats_ingame': '',
+    'admin_stats_outgame': '',
 
 }
 

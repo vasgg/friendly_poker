@@ -1,14 +1,14 @@
 from datetime import datetime
 import logging
 
-from sqlalchemy import select, update
+from sqlalchemy import select, update, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
 from bot.config import settings
 from bot.internal.lexicon import texts
 from bot.internal.context import GameStatus
-from database.models import Game
+from database.models import Game, Record
 
 logger = logging.getLogger(__name__)
 
@@ -123,3 +123,39 @@ async def get_group_game_report(
         roi,
     )
     return text
+
+
+async def games_hosting_count(user_id: int, db_session: AsyncSession) -> int:
+    query = select(Game).where(Game.host_id == user_id)
+    result = await db_session.execute(query)
+    return len(result.unique().scalars().all())
+
+
+async def games_playing_count(user_id: int, db_session: AsyncSession) -> int:
+    query = (
+        select(Game)
+        .join(Record, Game.id == Record.game_id)
+        .where(Record.user_id == user_id)
+    )
+    result = await db_session.execute(query)
+    return len(result.unique().scalars().all())
+
+
+async def get_mvp_count(user_id: int, db_session: AsyncSession) -> int:
+    query = select(Game).where(Game.mvp_id == user_id)
+    result = await db_session.execute(query)
+    return len(result.unique().scalars().all())
+
+
+async def get_player_total_buy_in(user_id: int, db_session: AsyncSession) -> int:
+    query = select(func.sum(Record.buy_in)).where(Record.user_id == user_id)
+    result = await db_session.execute(query)
+    total = result.scalar_one_or_none()
+    return total or 0
+
+
+async def get_player_total_buy_out(user_id: int, db_session: AsyncSession) -> int:
+    query = select(func.sum(Record.buy_out)).where(Record.user_id == user_id)
+    result = await db_session.execute(query)
+    total = result.scalar_one_or_none()
+    return total or 0
