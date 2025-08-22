@@ -98,11 +98,11 @@ async def debt_calculator(game_id: int, db_session: AsyncSession) -> list[Debt]:
     records_result = await db_session.execute(records_query)
     records = records_result.unique().scalars().all()
 
-    balance_map = {
-        record.user_id: record.net_profit
-        for record in records
-        if record.net_profit != 0
-    }
+    balance_map = {}
+    for record in records:
+        amount = 0 if record.net_profit is None else int(record.net_profit)
+        if amount != 0:
+            balance_map[record.user_id] = amount
 
     return [debt.to_model() for debt in equalizer(balance_map, game_id)]
 
