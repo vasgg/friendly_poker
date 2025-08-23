@@ -6,6 +6,7 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage, SimpleEventIsolation
 
+from bot.internal.poll import start_weekly_poll_loop
 from bot.middlewares.auth_middleware import AuthMiddleware
 from bot.middlewares.logging_middleware import LoggingMiddleware
 from bot.internal.commands import set_bot_commands
@@ -57,6 +58,7 @@ async def main():
     )
 
     logging.info("friendly poker bot started")
+    start_weekly_poll_loop(bot, settings.bot.GROUP_ID)
     await dispatcher.start_polling(bot)
 
 
