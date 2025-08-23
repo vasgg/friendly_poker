@@ -1,4 +1,4 @@
-from asyncio import Task, create_task, sleep
+from asyncio import create_task, sleep
 from datetime import datetime, timedelta, time
 import logging
 from zoneinfo import ZoneInfo
@@ -38,8 +38,7 @@ def _fmt_delta(td: timedelta) -> str:
 async def _send_poll(bot: Bot, group_id: int) -> None:
     await bot.send_poll(
         chat_id=group_id,
-        question=("Еженедельный техасский безлимитный.\n"
-                  "Старт в 21:00"),
+        question="Еженедельный техасский безлимитный.\nСтарт в 21:00",
         options=["Колл, есть хост", "Колл, у меня +1", "Колл", "Пас"],
         correct_option_id=0,
         is_anonymous=False,

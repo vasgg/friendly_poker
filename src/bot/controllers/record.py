@@ -29,6 +29,7 @@ async def get_record(game_id: int, user_id: int, db_session: AsyncSession) -> Re
     result = await db_session.execute(query)
     return result.unique().scalar_one()
 
+
 async def update_record(
     game_id: int,
     user_id: int,

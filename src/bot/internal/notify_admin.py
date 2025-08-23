@@ -13,7 +13,7 @@ async def on_startup(bot: Bot, settings: Settings):
     try:
         await bot.send_message(
             settings.bot.ADMIN,
-            f'<b>{folder.replace("_", " ")} started</b>\n\n/start',
+            f"<b>{folder.replace('_', ' ')} started</b>\n\n/start",
             disable_notification=True,
         )
     except:
@@ -25,7 +25,7 @@ async def on_shutdown(bot: Bot, settings: Settings):
     try:
         await bot.send_message(
             settings.bot.ADMIN,
-            f'<b>{folder.replace("_", " ")} shutdown</b>',
+            f"<b>{folder.replace('_', ' ')} shutdown</b>",
             disable_notification=True,
         )
     except:

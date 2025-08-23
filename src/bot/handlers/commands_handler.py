@@ -5,8 +5,14 @@ from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import NoResultFound
 
-from bot.controllers.game import games_hosting_count, games_playing_count, get_active_game, get_mvp_count, \
-    get_player_total_buy_in, get_player_total_buy_out
+from bot.controllers.game import (
+    games_hosting_count,
+    games_playing_count,
+    get_active_game,
+    get_mvp_count,
+    get_player_total_buy_in,
+    get_player_total_buy_out,
+)
 from bot.controllers.record import get_record
 from bot.internal.lexicon import ORDER, SETTINGS_QUESTIONS, texts
 from bot.internal.context import GameStatus, SettingsForm
@@ -56,13 +62,8 @@ async def settings_start(
     await message.answer(question)
 
 
-
 @router.message(Command("stats"))
-async def stats_command(
-    message: Message,
-    user: User,
-    db_session: AsyncSession
-):
+async def stats_command(message: Message, user: User, db_session: AsyncSession):
     games_hosted = await games_hosting_count(user.id, db_session)
     games_played = await games_playing_count(user.id, db_session)
     mvp_count = await get_mvp_count(user.id, db_session)
