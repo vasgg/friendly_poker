@@ -38,9 +38,8 @@ def _fmt_delta(td: timedelta) -> str:
 async def _send_poll(bot: Bot, group_id: int) -> None:
     await bot.send_poll(
         chat_id=group_id,
-        question="Еженедельный техасский безлимитный.\nСтарт в 21:00",
-        options=["Колл, есть хост", "Колл, у меня +1", "Колл", "Пас"],
-        correct_option_id=0,
+        question="Weekly Texas No Limit Hold'em.\nEntrance: 21:00",
+        options=["Go, I'll host", "Go", "Go, I have a +1.", "No way"],
         is_anonymous=False,
         allows_multiple_answers=False,
     )
