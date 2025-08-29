@@ -249,6 +249,9 @@ docs/_static/
 share/
 .var/
 
+# Bot runtime state
+src/bot/internal/poll_pins.json
+
 photos/
 __pycache__
 .idea
