@@ -51,7 +51,7 @@ async def weekly_poll_loop(bot: Bot, group_id: int) -> None:
             now = datetime.now(TZ)
             target = _next_friday_13(now)
             sleep_s = (target - now).total_seconds()
-            logging.info(
+            logger.info(
                 "Next weekly poll at %s (in %s)",
                 target.strftime("%Y-%m-%d %H:%M:%S %Z"),
                 _fmt_delta(target - now),
@@ -59,14 +59,14 @@ async def weekly_poll_loop(bot: Bot, group_id: int) -> None:
             await sleep(sleep_s)
             await _send_poll(bot, group_id)
         except Exception:
-            logging.exception("weekly_poll_loop error")
+            logger.exception("weekly_poll_loop error")
             await sleep(5)
 
 
 def start_weekly_poll_loop(bot: Bot, group_id: int):
     now = datetime.now(TZ)
     target = _next_friday_13(now)
-    logging.info(
+    logger.info(
         "Weekly poll scheduled for %s (in %s)",
         target.strftime("%Y-%m-%d %H:%M:%S %Z"),
         _fmt_delta(target - now),
