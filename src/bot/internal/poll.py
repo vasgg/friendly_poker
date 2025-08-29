@@ -36,13 +36,22 @@ def _fmt_delta(td: timedelta) -> str:
 
 
 async def _send_poll(bot: Bot, group_id: int) -> None:
-    await bot.send_poll(
+    msg = await bot.send_poll(
         chat_id=group_id,
         question="Weekly Texas No Limit Hold'em.\nEntrance: 21:00",
         options=["Go, I'll host", "Go", "Go, I have a +1", "No way"],
         is_anonymous=False,
         allows_multiple_answers=False,
     )
+    try:
+        await bot.pin_chat_message(
+            chat_id=group_id,
+            message_id=msg.message_id,
+            disable_notification=False,
+        )
+        logger.info("Pinned weekly poll message %s in chat %s", msg.message_id, group_id)
+    except Exception:
+        logger.exception("Failed to pin poll message in chat %s", group_id)
 
 
 async def weekly_poll_loop(bot: Bot, group_id: int) -> None:
