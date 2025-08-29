@@ -39,7 +39,7 @@ async def _send_poll(bot: Bot, group_id: int) -> None:
     await bot.send_poll(
         chat_id=group_id,
         question="Weekly Texas No Limit Hold'em.\nEntrance: 21:00",
-        options=["Go, I'll host", "Go", "Go, I have a +1.", "No way"],
+        options=["Go, I'll host", "Go", "Go, I have a +1", "No way"],
         is_anonymous=False,
         allows_multiple_answers=False,
     )
