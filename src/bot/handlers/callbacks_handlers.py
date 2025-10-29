@@ -212,9 +212,14 @@ async def game_menu_handler(
             )
         case GameAction.ADD_FUNDS:
             active_game = await get_active_game(db_session)
+            players = await get_players_from_game(active_game.id, db_session)
             await callback.message.answer(
-                text=texts["add_funds_selector"],
-                reply_markup=mode_selector_kb(game_id=active_game.id),
+                text=texts["add_funds_multiselect"],
+                reply_markup=users_multiselect_kb(
+                    players=players,
+                    mode=KeyboardMode.PLAYERS_ADD_1000,
+                    game_id=active_game.id,
+                ),
             )
         case GameAction.ADD_PHOTO:
             await callback.message.answer(text=texts["add_photo"])

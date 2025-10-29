@@ -20,7 +20,7 @@ texts = {
     'add_photo': 'Send me photo of the event',
     'add_funds_selector': 'Select type of add funds operation',
     'add_funds_multiselect': 'Choose players to add 1000',
-    'add_funds_to_single_player': 'Choose player to add funfs',
+    'add_funds_to_single_player': 'Choose player to add funds',
     'check_game_balance_error': 'error while finding delta of total pot and buyouts',
     'user_add_funds_reply': '',
     'game_started_group': 'The game <b>{game_id:02d}</b> with <b>{players_count}</b> players has started.\n\n'
