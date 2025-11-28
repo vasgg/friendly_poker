@@ -20,7 +20,15 @@ async def get_active_game(db_session: AsyncSession) -> Game | None:
         .options(joinedload(Game.records))
     )
     result = await db_session.execute(query)
-    game = result.unique().scalar_one_or_none()
+    games = result.unique().scalars().all()
+    if not games:
+        return None
+    
+    if len(games) > 1:
+        logger.error(f"Found {len(games)} active games! Returning the most recent one.")
+        games = sorted(games, key=lambda g: g.id, reverse=True)
+    
+    game = games[0]
     if game:
         logger.info(
             f"Active game: {game.id=}, {game.host_id=}, players: {len(game.records)}"

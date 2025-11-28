@@ -16,6 +16,7 @@ texts = {
     'insufficient_privileges': 'You can\'t perform this action.',
     'choose_host': 'Choose a host.',
     'incorrect_buyout_value': 'Incorrect BUY-OUT value.',
+    'game_already_active': 'There is already an active game. Please finish it first.',
 
     'add_photo': 'Send me photo of the event',
     'add_funds_selector': 'Select type of add funds operation',

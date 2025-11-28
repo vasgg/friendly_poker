@@ -77,6 +77,11 @@ async def single_player_handler(
     await callback.answer()
     match callback_data.mode:
         case SinglePlayerActionType.CHOOSE_HOST:
+            active_game = await get_active_game(db_session)
+            if active_game:
+                await callback.message.answer(text=texts["game_already_active"])
+                return
+
             game = await create_game(
                 admin_id=callback.from_user.id,
                 host_id=callback_data.player_id,
