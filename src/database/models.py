@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import BigInteger, ForeignKey, String, func
+from sqlalchemy import BigInteger, ForeignKey, String, func, Integer
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from bot.internal.context import GameStatus
@@ -61,36 +61,6 @@ class User(Base):
     def __repr__(self):
         return str(self)
 
-    def get_statistics(self, session):
-        result = (
-            session.query(
-                func.sum(Record.buy_in).label("total_buy_in"),
-                func.sum(Record.buy_out).label("total_buy_out"),
-                func.count(Record.id).label("games_played"),
-            )
-            .filter(Record.user_id == self.id)
-            .one()
-        )
-        total_buy_in, total_buy_out, games_played = result
-        return {
-            "total_buy_in": total_buy_in or 0,
-            "total_buy_out": total_buy_out or 0,
-            "net_result": (total_buy_out or 0) - (total_buy_in or 0),
-            "games_played": games_played or 0,
-        }
-
-    def get_creditor_statistics(self, session):
-        debts = session.query(Debt).filter_by(creditor_id=self.id).all()
-        total_loaned = sum(debt.amount for debt in debts)
-        unpaid_loans = sum(debt.amount for debt in debts if not debt.is_paid)
-        return {"total_loaned": total_loaned, "unpaid_loans": unpaid_loans}
-
-    def get_debtor_statistics(self, session):
-        debts = session.query(Debt).filter_by(debtor_id=self.id).all()
-        total_borrowed = sum(debt.amount for debt in debts)
-        unpaid_debts = sum(debt.amount for debt in debts if not debt.is_paid)
-        return {"total_borrowed": total_borrowed, "unpaid_debts": unpaid_debts}
-
 
 class Game(Base):
     __tablename__ = "games"
@@ -98,12 +68,13 @@ class Game(Base):
     status: Mapped[GameStatus] = mapped_column(default=GameStatus.ACTIVE)
     admin_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"))
     host_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"))
-    total_pot: Mapped[int] = mapped_column(default=0)
+    total_pot: Mapped[int] = mapped_column(Integer, default=0)
     mvp_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("users.id"))
     message_id: Mapped[int | None]
     photo_name: Mapped[str | None]
     photo_id: Mapped[str | None]
     duration: Mapped[int | None]
+    ratio: Mapped[int] = mapped_column(Integer, default=1)
 
     admin: Mapped["User"] = relationship(
         "User",

@@ -1,9 +1,11 @@
 from datetime import datetime
+from decimal import Decimal, ROUND_HALF_UP
 
 from aiogram.types import CallbackQuery
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from bot.controllers.game import get_game_by_id
 from bot.controllers.user import get_user_from_db_by_tg_id
 from bot.internal.lexicon import texts
 from bot.internal.schemas import DebtData
@@ -16,6 +18,11 @@ async def get_debts(game_id, db_session):
     result = await db_session.execute(debts)
     debts = result.unique().scalars().all()
     return debts
+
+
+def calculate_debt_amount(amount: int, ratio: int) -> Decimal:
+    value = (Decimal(amount) * Decimal(ratio)) / Decimal(100)
+    return value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
 def equalizer(balance_map: dict[int, int], game_id: int) -> list[DebtData]:
@@ -69,6 +76,7 @@ async def flush_debts_to_db(transactions: list[Debt], db_session: AsyncSession) 
 async def debt_informer_by_id(
     game_id: int, callback: CallbackQuery, db_session: AsyncSession
 ) -> None:
+    game = await get_game_by_id(game_id, db_session)
     debts = await get_debts(game_id, db_session)
     for debt in debts:
         creditor: User = await get_user_from_db_by_tg_id(debt.creditor_id, db_session)
@@ -77,12 +85,13 @@ async def debt_informer_by_id(
             "@" + creditor.username if creditor.username else creditor.fullname
         )
         debtor_username = "@" + debtor.username if debtor.username else debtor.fullname
+        amount = calculate_debt_amount(debt.amount, game.ratio)
         requisites = all((creditor.bank, creditor.IBAN, creditor.name_surname))
         debtor_text = (
             texts["debtor_personal_game_report_with_requisites"].format(
                 debt.game_id,
                 debt.id,
-                debt.amount / 100,
+                amount,
                 creditor_username,
                 creditor.bank,
                 creditor.IBAN,
@@ -90,7 +99,7 @@ async def debt_informer_by_id(
             )
             if requisites
             else texts["debtor_personal_game_report"].format(
-                debt.game_id, debt.id, debt.amount / 100, creditor_username
+                debt.game_id, debt.id, amount, creditor_username
             )
         )
         msg = await callback.bot.send_message(
@@ -103,7 +112,7 @@ async def debt_informer_by_id(
         await callback.bot.send_message(
             chat_id=creditor.id,
             text=texts["creditor_personal_game_report"].format(
-                debt.game_id, debt.id, debtor_username, debt.amount / 100
+                debt.game_id, debt.id, debtor_username, amount
             ),
         )
 

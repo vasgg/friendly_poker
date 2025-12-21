@@ -17,6 +17,9 @@ texts = {
     'choose_host': 'Choose a host.',
     'incorrect_buyout_value': 'Incorrect BUY-OUT value.',
     'game_already_active': 'There is already an active game. Please finish it first.',
+    'select_mode_prompt': 'Choose ratio for the next game.',
+    'ratio_set': 'Next game ratio set to x{}.',
+    'yearly_stats_set': 'Yearly stats will be shown after the next game.',
 
     'add_photo': 'Send me photo of the event',
     'add_funds_selector': 'Select type of add funds operation',
@@ -29,9 +32,14 @@ texts = {
     'finish_game_dialog': 'Choose an action',
     'buy_out_updated': 'Game {}. {} BUY-OUT set to {}.',
     'remained_players': 'Game {}. Players remained: {}.',
-    'exit_game_wrong_total_sum': 'Impossible to finish the game, the buy-in and cash-out amounts do not match\n\n'
-                                 'Total pot: {}\n'
-                                 'Difference: {}',
+    'exit_game_wrong_total_sum>0': 'Impossible to finish the game, the buy-in and cash-out amounts do not match.\n'
+                                   'Fewer chips returned!\n\n'
+                                   'Total pot: {}\n'
+                                   'Difference: <b>{}</>',
+    'exit_game_wrong_total_sum<0': 'Impossible to finish the game, the buy-in and cash-out amounts do not match.\n'
+                                   'Too many chips declared!\n\n'
+                                   'Total pot: {}\n'
+                                   'Difference: <b>{}</>',
     'global_game_report': 'Game <b>{:02}</b> has ended.\n\n'
                           'Duration: <b>{}</b>\n'
                           'Total pot: <b>{}</b>\n'
@@ -84,6 +92,8 @@ buttons = {
     'menu_abort_game': 'Abort game',
     'menu_start_game': 'Start game',
     'menu_statistics': 'Statistics',
+    'menu_select_ratio': 'Choose ratio',
+    'menu_select_yearly_stats': 'Yearly stats next game',
     'cancel_button': 'Cancel',
     'futher_button': 'Further',
     'multi_selector': 'Add 1000',

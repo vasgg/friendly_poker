@@ -54,3 +54,7 @@ class DebtActionCbData(CallbackData, prefix="debt_action"):
     action: DebtAction
     debt_id: int
     chat_id: int
+
+
+class GameModeCbData(CallbackData, prefix="game_mode"):
+    ratio: int

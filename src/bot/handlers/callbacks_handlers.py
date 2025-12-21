@@ -14,6 +14,8 @@ from bot.controllers.game import (
     get_active_game,
     get_game_by_id,
     get_group_game_report,
+    generate_yearly_stats_report,
+    get_yearly_stats,
 )
 from bot.controllers.record import (
     check_game_balance,
@@ -38,6 +40,7 @@ from bot.internal.callbacks import (
     AddFundsOperationType,
     CancelCbData,
     FinishGameCbData,
+    GameModeCbData,
     GameMenuCbData,
     SinglePlayerActionCbData,
     MultiselectFurtherCbData,
@@ -59,6 +62,7 @@ from bot.internal.keyboards import (
     confirmation_dialog_kb,
     finish_game_kb,
     mode_selector_kb,
+    select_ratio_kb,
     users_multiselect_kb,
 )
 from database.models import Game, User
@@ -82,11 +86,15 @@ async def single_player_handler(
                 await callback.message.answer(text=texts["game_already_active"])
                 return
 
+            data = await state.get_data()
+            ratio = data.get("next_game_ratio", 1)
             game = await create_game(
                 admin_id=callback.from_user.id,
                 host_id=callback_data.player_id,
+                ratio=ratio,
                 db_session=db_session,
             )
+            await state.update_data(next_game_ratio=1)
             all_users = await get_all_users(db_session)
             last_played_users = await get_last_played_users(db_session)
             await state.update_data(chosen_for_new_game=last_played_users)
@@ -235,6 +243,27 @@ async def game_menu_handler(
                     await callback.message.answer(text=texts["admin_statistics"])
                 case False:
                     await callback.message.answer(text=texts["user_statistics"])
+        case GameAction.SELECT_RATIO:
+            if user.is_admin:
+                await callback.message.answer(
+                    text=texts["select_mode_prompt"],
+                    reply_markup=select_ratio_kb(),
+                )
+        case GameAction.SELECT_YEARLY_STATS:
+            if user.is_admin:
+                await state.update_data(next_game_yearly_stats=True)
+                await callback.message.answer(text=texts["yearly_stats_set"])
+
+
+@router.callback_query(GameModeCbData.filter())
+async def game_mode_handler(
+    callback: CallbackQuery,
+    callback_data: GameModeCbData,
+    state: FSMContext,
+) -> None:
+    await callback.answer()
+    await state.update_data(next_game_ratio=callback_data.ratio)
+    await callback.message.answer(text=texts["ratio_set"].format(callback_data.ratio))
 
 
 @router.callback_query(CancelCbData.filter())
@@ -390,6 +419,7 @@ async def abort_game_handler(
 async def finish_game_handler(
     callback: CallbackQuery,
     callback_data: FinishGameCbData,
+    state: FSMContext,
     db_session: AsyncSession,
 ) -> None:
     await callback.answer()
@@ -431,10 +461,16 @@ async def finish_game_handler(
                 if results.total_pot is None or results.delta is None:
                     await callback.message.answer(texts["check_game_balance_error"])
                     return
-                if results.delta != 0:
+                if results.delta > 0:
                     await callback.message.answer(
-                        text=texts["exit_game_wrong_total_sum"].format(
+                        text=texts["exit_game_wrong_total_sum>0"].format(
                             results.total_pot, results.delta
+                        )
+                    )
+                elif results.delta < 0:
+                    await callback.message.answer(
+                        text=texts["exit_game_wrong_total_sum<0"].format(
+                            results.total_pot, abs(results.delta)
                         )
                     )
                 else:
@@ -460,3 +496,18 @@ async def finish_game_handler(
                     await callback.bot.send_message(
                         chat_id=settings.bot.GROUP_ID, text=text
                     )
+                    data = await state.get_data()
+                    if data.get("next_game_yearly_stats"):
+                        game = await get_game_by_id(callback_data.game_id, db_session)
+                        created_at = game.created_at
+                        if created_at.tzinfo is None:
+                            created_at = created_at.replace(
+                                tzinfo=settings.bot.TIMEZONE
+                            )
+                        year = created_at.astimezone(settings.bot.TIMEZONE).year
+                        summary = await get_yearly_stats(year, db_session)
+                        yearly_text = generate_yearly_stats_report(year, summary)
+                        await callback.bot.send_message(
+                            chat_id=settings.bot.GROUP_ID, text=yearly_text
+                        )
+                        await state.update_data(next_game_yearly_stats=False)

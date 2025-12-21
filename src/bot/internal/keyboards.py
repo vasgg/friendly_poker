@@ -11,6 +11,7 @@ from bot.internal.callbacks import (
     CancelCbData,
     MultiselectFurtherCbData,
     PlayerCbData,
+    GameModeCbData,
 )
 from bot.internal.lexicon import buttons
 from bot.internal.context import (
@@ -130,6 +131,26 @@ def game_menu_kb(status: GameStatus | None) -> InlineKeyboardMarkup:
                 text=buttons["menu_statistics"],
                 callback_data=GameMenuCbData(action=GameAction.STATISTICS).pack(),
             )
+            builder.button(
+                text=buttons["menu_select_ratio"],
+                callback_data=GameMenuCbData(action=GameAction.SELECT_RATIO).pack(),
+            )
+            builder.button(
+                text=buttons["menu_select_yearly_stats"],
+                callback_data=GameMenuCbData(
+                    action=GameAction.SELECT_YEARLY_STATS
+                ).pack(),
+            )
+    builder.adjust(2)
+    return builder.as_markup()
+
+
+def select_ratio_kb():
+    builder = InlineKeyboardBuilder()
+    builder.button(text="x1", callback_data=GameModeCbData(ratio=1).pack())
+    builder.button(text="x2", callback_data=GameModeCbData(ratio=2).pack())
+    builder.button(text="x3", callback_data=GameModeCbData(ratio=3).pack())
+    builder.button(text="x4", callback_data=GameModeCbData(ratio=4).pack())
     builder.adjust(2)
     return builder.as_markup()
 

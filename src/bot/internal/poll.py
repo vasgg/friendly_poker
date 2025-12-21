@@ -80,7 +80,9 @@ async def _send_poll(bot: Bot, group_id: int) -> None:
             try:
                 await bot.unpin_chat_message(chat_id=group_id, message_id=prev_id)
                 logger.info(
-                    "Unpinned previous weekly poll message %s in chat %s", prev_id, group_id
+                    "Unpinned previous weekly poll message %s in chat %s",
+                    prev_id,
+                    group_id,
                 )
             except Exception:
                 logger.warning(
@@ -92,7 +94,9 @@ async def _send_poll(bot: Bot, group_id: int) -> None:
             message_id=msg.message_id,
             disable_notification=False,
         )
-        logger.info("Pinned weekly poll message %s in chat %s", msg.message_id, group_id)
+        logger.info(
+            "Pinned weekly poll message %s in chat %s", msg.message_id, group_id
+        )
         _save_last_pinned_poll_id(group_id, msg.message_id)
     except Exception:
         logger.exception("Failed to pin poll message in chat %s", group_id)

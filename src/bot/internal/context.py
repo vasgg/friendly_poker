@@ -38,6 +38,8 @@ class GameAction(IntEnum):
     ADD_FUNDS = auto()
     ADD_PHOTO = auto()
     STATISTICS = auto()
+    SELECT_RATIO = auto()
+    SELECT_YEARLY_STATS = auto()
 
 
 class RecordUpdateMode(IntEnum):
