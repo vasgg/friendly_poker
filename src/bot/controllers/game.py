@@ -21,6 +21,8 @@ class YearlySummary:
     total_players: int
     total_buy_in: int
     total_duration_seconds: int
+    top_mvp_names: list[str]
+    top_mvp_count: int
     top_host_names: list[str]
     top_host_games: int
 
@@ -233,11 +235,33 @@ async def get_yearly_stats(
     else:
         top_host_names, top_host_games = [], 0
 
+    mvp_query = (
+        select(
+            User.fullname,
+            func.count(Game.id).label("mvp_count"),
+        )
+        .join(Game, Game.mvp_id == User.id)
+        .where(Game.status == GameStatus.FINISHED)
+        .where(Game.mvp_id.isnot(None))
+        .where(extract("year", Game.created_at) == year)
+        .group_by(User.id, User.fullname)
+        .order_by(func.count(Game.id).desc())
+    )
+    mvp_result = await db_session.execute(mvp_query)
+    mvp_rows = mvp_result.all()
+    if mvp_rows:
+        top_mvp_count = max(row[1] for row in mvp_rows)
+        top_mvp_names = [row[0] for row in mvp_rows if row[1] == top_mvp_count]
+    else:
+        top_mvp_names, top_mvp_count = [], 0
+
     summary = YearlySummary(
         total_games=total_games or 0,
         total_players=total_players or 0,
         total_buy_in=total_buy_in or 0,
         total_duration_seconds=total_duration_seconds or 0,
+        top_mvp_names=top_mvp_names,
+        top_mvp_count=top_mvp_count or 0,
         top_host_names=top_host_names,
         top_host_games=top_host_games or 0,
     )
@@ -256,7 +280,7 @@ def generate_yearly_stats_report(
         f"Total duration: <b>{format_duration_with_days(summary.total_duration_seconds)}</b>",
     ]
 
-    if players or summary.top_host_names:
+    if players or summary.top_mvp_names or summary.top_host_names:
         lines.append("")
         lines.append("<b>Records</b>")
     if players:
@@ -287,11 +311,17 @@ def generate_yearly_stats_report(
         most_buy_in_label = html.escape(", ".join(most_buy_in_names))
         best_roi_label = html.escape(", ".join(best_roi_names))
 
-        lines.append(f"Most games: <b>{most_games_label}</b> — ({most_games_value})")
-        lines.append(f"Best profit: <b>{best_profit_label}</b> ({best_profit_value})")
-        lines.append(f"Most buy-in: <b>{most_buy_in_label}</b> ({most_buy_in_value})")
+        lines.append(f"Most games: <b>{most_games_label}</b> — {most_games_value}")
+        lines.append(f"Best profit: <b>{best_profit_label}</b> — {best_profit_value}")
+        lines.append(f"Top buy-in: <b>{most_buy_in_label}</b> — {most_buy_in_value}")
         if best_roi_names:
-            lines.append(f"Best ROI: <b>{best_roi_label}</b> ({best_roi_value:.2f}%)")
+            lines.append(f"Best ROI: <b>{best_roi_label}</b> — {best_roi_value:.2f}%")
+    if summary.top_mvp_names:
+        top_mvp_label = html.escape(", ".join(sorted(summary.top_mvp_names)))
+        lines.append(
+            f"Top MVP: <b>{top_mvp_label}</b> — "
+            f"{summary.top_mvp_count} awards"
+        )
     if summary.top_host_names:
         top_host_label = html.escape(", ".join(sorted(summary.top_host_names)))
         host_share = (
