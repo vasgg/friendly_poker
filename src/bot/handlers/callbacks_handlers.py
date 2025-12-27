@@ -505,8 +505,10 @@ async def finish_game_handler(
                                 tzinfo=settings.bot.TIMEZONE
                             )
                         year = created_at.astimezone(settings.bot.TIMEZONE).year
-                        summary = await get_yearly_stats(year, db_session)
-                        yearly_text = generate_yearly_stats_report(year, summary)
+                        summary, players = await get_yearly_stats(year, db_session)
+                        yearly_text = generate_yearly_stats_report(
+                            year, summary, players
+                        )
                         await callback.bot.send_message(
                             chat_id=settings.bot.GROUP_ID, text=yearly_text
                         )

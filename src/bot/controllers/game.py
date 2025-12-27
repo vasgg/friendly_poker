@@ -19,8 +19,12 @@ logger = logging.getLogger(__name__)
 class YearlySummary:
     total_games: int
     total_players: int
+    biggest_pot: int
+    biggest_pot_game_id: int | None
     total_buy_in: int
     total_duration_seconds: int
+    best_single_game_roi: float | None
+    best_single_game_roi_names: list[str]
     top_mvp_names: list[str]
     top_mvp_count: int
     top_host_names: list[str]
@@ -183,6 +187,20 @@ async def get_yearly_stats(
     duration_result = await db_session.execute(duration_query)
     (total_duration_seconds,) = duration_result.one()
 
+    biggest_pot_query = (
+        select(Game.total_pot, Game.id)
+        .where(Game.status == GameStatus.FINISHED)
+        .where(extract("year", Game.created_at) == year)
+        .order_by(Game.total_pot.desc(), Game.id.asc())
+        .limit(1)
+    )
+    biggest_pot_result = await db_session.execute(biggest_pot_query)
+    biggest_pot_row = biggest_pot_result.one_or_none()
+    if biggest_pot_row:
+        biggest_pot, biggest_pot_game_id = biggest_pot_row
+    else:
+        biggest_pot, biggest_pot_game_id = 0, None
+
     players_query = (
         select(
             User.id,
@@ -235,6 +253,31 @@ async def get_yearly_stats(
     else:
         top_host_names, top_host_games = [], 0
 
+    single_roi_query = (
+        select(func.max(Record.ROI))
+        .join(Game, Game.id == Record.game_id)
+        .where(Game.status == GameStatus.FINISHED)
+        .where(Record.ROI.isnot(None))
+        .where(extract("year", Game.created_at) == year)
+    )
+    single_roi_result = await db_session.execute(single_roi_query)
+    (best_single_game_roi,) = single_roi_result.one()
+    if best_single_game_roi is not None:
+        single_roi_names_query = (
+            select(func.distinct(User.fullname))
+            .join(Record, Record.user_id == User.id)
+            .join(Game, Game.id == Record.game_id)
+            .where(Game.status == GameStatus.FINISHED)
+            .where(Record.ROI == best_single_game_roi)
+            .where(extract("year", Game.created_at) == year)
+        )
+        single_roi_names_result = await db_session.execute(single_roi_names_query)
+        best_single_game_roi_names = sorted(
+            row[0] for row in single_roi_names_result.all()
+        )
+    else:
+        best_single_game_roi_names = []
+
     mvp_query = (
         select(
             User.fullname,
@@ -258,8 +301,12 @@ async def get_yearly_stats(
     summary = YearlySummary(
         total_games=total_games or 0,
         total_players=total_players or 0,
+        biggest_pot=biggest_pot or 0,
+        biggest_pot_game_id=biggest_pot_game_id,
         total_buy_in=total_buy_in or 0,
         total_duration_seconds=total_duration_seconds or 0,
+        best_single_game_roi=best_single_game_roi,
+        best_single_game_roi_names=best_single_game_roi_names,
         top_mvp_names=top_mvp_names,
         top_mvp_count=top_mvp_count or 0,
         top_host_names=top_host_names,
@@ -276,11 +323,17 @@ def generate_yearly_stats_report(
         f"<b>Year {year} summary</b>",
         f"Total games: <b>{summary.total_games}</b>",
         f"Total players: <b>{summary.total_players}</b>",
-        f"Total buy-in: <b>{summary.total_buy_in}</b>",
+        f"Biggest pot: <b>{summary.biggest_pot}</b> (game {summary.biggest_pot_game_id})",
+        f"Total pot: <b>{summary.total_buy_in}</b>",
         f"Total duration: <b>{format_duration_with_days(summary.total_duration_seconds)}</b>",
     ]
 
-    if players or summary.top_mvp_names or summary.top_host_names:
+    if (
+        players
+        or summary.best_single_game_roi_names
+        or summary.top_mvp_names
+        or summary.top_host_names
+    ):
         lines.append("")
         lines.append("<b>Records</b>")
     if players:
@@ -298,18 +351,18 @@ def generate_yearly_stats_report(
         )
         roi_candidates = [p for p in players if p.roi is not None]
         if roi_candidates:
-            best_roi_value = max(p.roi for p in roi_candidates)
-            best_roi_names = sorted(
-                p.fullname for p in roi_candidates if p.roi == best_roi_value
+            best_total_roi_value = max(p.roi for p in roi_candidates)
+            best_total_roi_names = sorted(
+                p.fullname for p in roi_candidates if p.roi == best_total_roi_value
             )
         else:
-            best_roi_value = None
-            best_roi_names = []
+            best_total_roi_value = None
+            best_total_roi_names = []
 
         most_games_label = html.escape(", ".join(most_games_names))
         best_profit_label = html.escape(", ".join(best_profit_names))
         most_buy_in_label = html.escape(", ".join(most_buy_in_names))
-        best_roi_label = html.escape(", ".join(best_roi_names))
+        best_total_roi_label = html.escape(", ".join(best_total_roi_names))
 
         lines.append(
             f"Most games: <b>{most_games_label}</b> ({most_games_value})"
@@ -320,9 +373,18 @@ def generate_yearly_stats_report(
         lines.append(
             f"Most buy-in: <b>{most_buy_in_label}</b> ({most_buy_in_value})"
         )
-        if best_roi_names:
+        if summary.best_single_game_roi_names:
+            best_single_roi_label = html.escape(
+                ", ".join(summary.best_single_game_roi_names)
+            )
             lines.append(
-                f"Best ROI: <b>{best_roi_label}</b> ({best_roi_value:.2f}%)"
+                f"Best ROI (single game): <b>{best_single_roi_label}</b> "
+                f"({summary.best_single_game_roi:.2f}%)"
+            )
+        if best_total_roi_names:
+            lines.append(
+                f"Best total ROI: <b>{best_total_roi_label}</b> "
+                f"({best_total_roi_value:.2f}%)"
             )
     if summary.top_mvp_names:
         top_mvp_label = html.escape(", ".join(sorted(summary.top_mvp_names)))
