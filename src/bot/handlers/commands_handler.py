@@ -11,7 +11,7 @@ from bot.controllers.game import (
     get_active_game,
     get_mvp_count,
     get_player_total_buy_in,
-    get_player_total_buy_out, get_yearly_stats, generate_yearly_stats_report,
+    get_player_total_buy_out,
 )
 from bot.controllers.record import get_record
 from bot.internal.lexicon import ORDER, SETTINGS_QUESTIONS, texts
@@ -44,15 +44,6 @@ async def admin_command(message: Message, user: User, db_session: AsyncSession, 
     await message.answer(
         text=texts["admin_menu"], reply_markup=game_menu_kb(status=status)
     )
-    year = 2025
-    summary, players = await get_yearly_stats(year, db_session)
-    yearly_text = generate_yearly_stats_report(
-        year, summary, players
-    )
-    await message.bot.send_message(
-        chat_id=settings.bot.GROUP_ID, text=yearly_text
-    )
-    await state.update_data(next_game_yearly_stats=False)
 
 
 @router.message(Command("settings"))
