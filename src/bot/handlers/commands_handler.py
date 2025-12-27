@@ -35,7 +35,7 @@ async def command_handler(
 
 
 @router.message(Command("admin"))
-async def admin_command(message: Message, user: User, db_session: AsyncSession) -> None:
+async def admin_command(message: Message, user: User, db_session: AsyncSession, state: FSMContext) -> None:
     if not user.is_admin:
         await message.answer(text=texts["insufficient_privileges"])
         return
@@ -44,6 +44,8 @@ async def admin_command(message: Message, user: User, db_session: AsyncSession) 
     await message.answer(
         text=texts["admin_menu"], reply_markup=game_menu_kb(status=status)
     )
+    await state.update_data(next_game_yearly_stats=True)
+    await message.answer(text=texts["yearly_stats_set"])
 
 
 @router.message(Command("settings"))
