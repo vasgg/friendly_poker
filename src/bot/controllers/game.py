@@ -311,11 +311,19 @@ def generate_yearly_stats_report(
         most_buy_in_label = html.escape(", ".join(most_buy_in_names))
         best_roi_label = html.escape(", ".join(best_roi_names))
 
-        lines.append(f"Most games: <b>{most_games_label}</b> — {most_games_value}")
-        lines.append(f"Best profit: <b>{best_profit_label}</b> — {best_profit_value}")
-        lines.append(f"Top buy-in: <b>{most_buy_in_label}</b> — {most_buy_in_value}")
+        lines.append(
+            f"Most games: <b>{most_games_label}</b> ({most_games_value})"
+        )
+        lines.append(
+            f"Best profit: <b>{best_profit_label}</b> ({best_profit_value})"
+        )
+        lines.append(
+            f"Most buy-in: <b>{most_buy_in_label}</b> ({most_buy_in_value})"
+        )
         if best_roi_names:
-            lines.append(f"Best ROI: <b>{best_roi_label}</b> — {best_roi_value:.2f}%")
+            lines.append(
+                f"Best ROI: <b>{best_roi_label}</b> ({best_roi_value:.2f}%)"
+            )
     if summary.top_mvp_names:
         top_mvp_label = html.escape(", ".join(sorted(summary.top_mvp_names)))
         lines.append(
@@ -330,8 +338,8 @@ def generate_yearly_stats_report(
             else 0
         )
         lines.append(
-            f"Top host: <b>{top_host_label}</b> — "
-            f"{summary.top_host_games} games, {host_share:.1f}%"
+            f"Top host: <b>{top_host_label}</b> "
+            f"({summary.top_host_games} games, {host_share:.1f}%)"
         )
 
     return "\n".join(lines)

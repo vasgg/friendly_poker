@@ -10,6 +10,7 @@ from bot.config import settings
 from bot.controllers.debt import calculate_debt_amount, get_debt_by_id
 from bot.controllers.game import get_game_by_id
 from bot.controllers.user import get_user_from_db_by_tg_id
+from bot.internal.notify_admin import send_message_to_player
 from bot.internal.callbacks import DebtActionCbData
 from bot.internal.lexicon import texts
 from bot.internal.context import DebtAction
@@ -38,8 +39,10 @@ async def debt_handler(
     match callback_data.action:
         case DebtAction.MARK_AS_PAID:
             await callback.message.edit_reply_markup()
-            await callback.bot.send_message(
-                chat_id=creditor.id,
+            await send_message_to_player(
+                callback.bot,
+                user_id=creditor.id,
+                fullname=creditor.fullname,
                 text=texts["debt_marked_as_paid"].format(
                     debt.game_id, debt.id, debtor_username, amount
                 ),
@@ -58,8 +61,10 @@ async def debt_handler(
             db_session.add(debt)
             await db_session.flush()
 
-            await callback.bot.send_message(
-                chat_id=debtor.id,
+            await send_message_to_player(
+                callback.bot,
+                user_id=debtor.id,
+                fullname=debtor.fullname,
                 text=texts["debt_complete"].format(
                     debt.game_id, debt.id, creditor_username, amount
                 ),

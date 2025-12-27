@@ -10,6 +10,7 @@ from bot.controllers.user import get_user_from_db_by_tg_id
 from bot.internal.lexicon import texts
 from bot.internal.schemas import DebtData
 from bot.internal.keyboards import get_paid_button
+from bot.internal.notify_admin import send_message_to_player
 from database.models import Debt, User
 
 
@@ -102,15 +103,20 @@ async def debt_informer_by_id(
                 debt.game_id, debt.id, amount, creditor_username
             )
         )
-        msg = await callback.bot.send_message(
-            chat_id=debtor.id,
+        msg = await send_message_to_player(
+            callback.bot,
+            user_id=debtor.id,
+            fullname=debtor.fullname,
             text=debtor_text,
             reply_markup=await get_paid_button(debt.id, debtor.id),
         )
-        debt.debt_message_id = msg.message_id
-        await db_session.flush()
-        await callback.bot.send_message(
-            chat_id=creditor.id,
+        if msg:
+            debt.debt_message_id = msg.message_id
+            await db_session.flush()
+        await send_message_to_player(
+            callback.bot,
+            user_id=creditor.id,
+            fullname=creditor.fullname,
             text=texts["creditor_personal_game_report"].format(
                 debt.game_id, debt.id, debtor_username, amount
             ),
