@@ -3,8 +3,12 @@ from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.exc import NoResultFound
 
+from bot.controllers.debt import (
+    calculate_debt_amount,
+    get_unpaid_debts_as_creditor,
+    get_unpaid_debts_as_debtor,
+)
 from bot.controllers.game import (
     games_hosting_count,
     games_playing_count,
@@ -16,7 +20,7 @@ from bot.controllers.game import (
 from bot.controllers.record import get_record
 from bot.internal.lexicon import ORDER, SETTINGS_QUESTIONS, texts
 from bot.internal.context import GameStatus, SettingsForm
-from bot.internal.keyboards import game_menu_kb
+from bot.internal.keyboards import debt_stats_kb, game_menu_kb
 
 from database.models import User
 
@@ -77,32 +81,74 @@ async def stats_command(message: Message, user: User, db_session: AsyncSession):
         total_roi_str = "0%" if total_buy_out == 0 else "∞%"
 
     active_game = await get_active_game(db_session)
+    record = None
     if active_game:
-        try:
-            record = await get_record(active_game.id, user.id, db_session)
-            current_buy_in = record.buy_in or 0
-        except NoResultFound:
-            current_buy_in = 0
-        await message.answer(
-            text=texts["player_stats_ingame"].format(
-                active_game.id,
-                current_buy_in,
-                games_played,
-                games_hosted,
-                mvp_count,
-                total_buy_in,
-                total_buy_out,
-                total_roi_str,
-            )
+        record = await get_record(active_game.id, user.id, db_session)
+
+    if active_game and record:
+        current_buy_in = record.buy_in or 0
+        stats_text = texts["player_stats_ingame"].format(
+            active_game.id,
+            current_buy_in,
+            games_played,
+            games_hosted,
+            mvp_count,
+            total_buy_in,
+            total_buy_out,
+            total_roi_str,
         )
     else:
-        await message.answer(
-            text=texts["player_stats_outgame"].format(
-                games_played,
-                games_hosted,
-                mvp_count,
-                total_buy_in,
-                total_buy_out,
-                total_roi_str,
-            )
+        stats_text = texts["player_stats_outgame"].format(
+            games_played,
+            games_hosted,
+            mvp_count,
+            total_buy_in,
+            total_buy_out,
+            total_roi_str,
         )
+
+    # Build debts section (aggregated by player)
+    debts_as_debtor = await get_unpaid_debts_as_debtor(user.id, db_session)
+    debts_as_creditor = await get_unpaid_debts_as_creditor(user.id, db_session)
+
+    reply_markup = None
+    if debts_as_debtor or debts_as_creditor:
+        debts_text = texts["stats_debts_header"]
+
+        if debts_as_debtor:
+            debts_text += texts["stats_debts_you_owe"]
+            # Aggregate by creditor
+            creditor_totals: dict[int, tuple[str, float]] = {}
+            for debt in debts_as_debtor:
+                amount = float(calculate_debt_amount(debt.amount, debt.game.ratio))
+                creditor_id = debt.creditor_id
+                if creditor_id in creditor_totals:
+                    name, total = creditor_totals[creditor_id]
+                    creditor_totals[creditor_id] = (name, total + amount)
+                else:
+                    creditor_totals[creditor_id] = (debt.creditor.fullname, amount)
+            for name, total in creditor_totals.values():
+                debts_text += texts["stats_debt_aggregated"].format(name, total)
+
+        if debts_as_creditor:
+            debts_text += texts["stats_debts_owed_to_you"]
+            # Aggregate by debtor
+            debtor_totals: dict[int, tuple[str, float]] = {}
+            for debt in debts_as_creditor:
+                amount = float(calculate_debt_amount(debt.amount, debt.game.ratio))
+                debtor_id = debt.debtor_id
+                if debtor_id in debtor_totals:
+                    name, total = debtor_totals[debtor_id]
+                    debtor_totals[debtor_id] = (name, total + amount)
+                else:
+                    debtor_totals[debtor_id] = (debt.debtor.fullname, amount)
+            for name, total in debtor_totals.values():
+                debts_text += texts["stats_debt_aggregated"].format(name, total)
+
+        stats_text += debts_text
+        reply_markup = debt_stats_kb(
+            has_debts_i_owe=bool(debts_as_debtor),
+            has_debts_owe_me=bool(debts_as_creditor),
+        )
+
+    await message.answer(text=stats_text, reply_markup=reply_markup)

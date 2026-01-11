@@ -6,28 +6,20 @@ from aiogram.types import CallbackQuery
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.config import settings
-from bot.controllers.debt import flush_debts_to_db, debt_informer_by_id
 from bot.controllers.game import (
     abort_game,
-    commit_game_results_to_db,
     create_game,
     get_active_game,
     get_game_by_id,
-    get_group_game_report,
-    generate_yearly_stats_report,
-    get_yearly_stats,
 )
 from bot.controllers.record import (
-    check_game_balance,
     create_record,
-    debt_calculator,
-    get_mvp,
-    get_roi_from_game_by_player_id,
+    get_record,
     get_remained_players_in_game,
     increase_player_buy_in,
-    update_net_profit_and_roi,
     update_record,
 )
+from bot.services.game_finalization import finalize_game
 from bot.controllers.user import (
     get_all_users,
     get_last_played_users,
@@ -61,7 +53,6 @@ from bot.internal.keyboards import (
     choose_single_player_kb,
     confirmation_dialog_kb,
     finish_game_kb,
-    mode_selector_kb,
     select_ratio_kb,
     users_multiselect_kb,
 )
@@ -79,10 +70,15 @@ async def single_player_handler(
     db_session: AsyncSession,
 ) -> None:
     await callback.answer()
+    logger.debug(
+        "SinglePlayerAction: mode=%s player_id=%s user_id=%s",
+        callback_data.mode, callback_data.player_id, callback.from_user.id
+    )
     match callback_data.mode:
         case SinglePlayerActionType.CHOOSE_HOST:
             active_game = await get_active_game(db_session)
             if active_game:
+                logger.warning("Attempt to create game while game %s is active", active_game.id)
                 await callback.message.answer(text=texts["game_already_active"])
                 return
 
@@ -94,6 +90,8 @@ async def single_player_handler(
                 ratio=ratio,
                 db_session=db_session,
             )
+            logger.info("Game %s created by admin %s, host=%s, ratio=%s",
+                game.id, callback.from_user.id, callback_data.player_id, ratio)
             await state.update_data(next_game_ratio=1)
             all_users = await get_all_users(db_session)
             last_played_users = await get_last_played_users(db_session)
@@ -190,6 +188,7 @@ async def game_menu_handler(
     db_session: AsyncSession,
 ) -> None:
     await callback.answer()
+    logger.debug("GameMenu: action=%s user_id=%s", callback_data.action, callback.from_user.id)
     all_users = await get_all_users(db_session)
     match callback_data.action:
         case GameAction.START_GAME:
@@ -289,19 +288,22 @@ async def multiselect_further_handler(
     db_session: AsyncSession,
 ) -> None:
     await callback.answer()
+    logger.debug("MultiselectFurther: mode=%s game_id=%s user_id=%s",
+        callback_data.mode, callback_data.game_id, callback.from_user.id)
     data = await state.get_data()
     users = await get_all_users(db_session)
+    users_by_id = {user.id: user for user in users}
     match callback_data.mode:
         case KeyboardMode.NEW_GAME:
             game = await get_game_by_id(callback_data.game_id, db_session)
-            host = await get_user_from_db_by_tg_id(game.host_id, db_session)
+            host = users_by_id.get(game.host_id)
             chosen_users = data.get("chosen_for_new_game", list())
             await callback.bot.send_message(
                 chat_id=settings.bot.GROUP_ID,
                 text=texts["game_started_group"].format(
                     game_id=callback_data.game_id,
                     players_count=len(chosen_users),
-                    host_name=host.fullname,
+                    host_name=host.fullname if host else "Unknown",
                 ),
             )
             for user_id in chosen_users:
@@ -310,15 +312,16 @@ async def multiselect_further_handler(
                     user_id=user_id,
                     db_session=db_session,
                 )
-                user = await get_user_from_db_by_tg_id(user_id, db_session)
-                user.last_time_played = True
-                user.games_played += 1
-                db_session.add_all([record, user])
+                user = users_by_id.get(user_id)
+                if user:
+                    user.last_time_played = True
+                    user.games_played += 1
+                db_session.add(record)
             for user in users:
                 if user.id not in chosen_users:
                     user.last_time_played = False
-                    db_session.add(user)
             text = texts["admin_game_created"].format(callback_data.game_id)
+            logger.info("Game %s: %d players added to new game", callback_data.game_id, len(chosen_users))
             await state.update_data(chosen_for_new_game=list())
         case KeyboardMode.ADD_PLAYERS:
             chosen_users = data.get("chosen_for_add_players", list())
@@ -328,13 +331,15 @@ async def multiselect_further_handler(
                     user_id=user_id,
                     db_session=db_session,
                 )
-                user = await get_user_from_db_by_tg_id(user_id, db_session)
-                user.last_time_played = True
-                user.games_played += 1
-                db_session.add_all([record, user])
+                user = users_by_id.get(user_id)
+                if user:
+                    user.last_time_played = True
+                    user.games_played += 1
+                db_session.add(record)
             text = texts["admin_players_added"].format(
                 len(chosen_users), callback_data.game_id
             )
+            logger.info("Game %s: %d players added mid-game", callback_data.game_id, len(chosen_users))
             await state.update_data(chosen_for_add_players=list())
         case KeyboardMode.PLAYERS_ADD_1000:
             chosen_users = data.get("chosen_for_add_1000", list())
@@ -346,11 +351,15 @@ async def multiselect_further_handler(
                     amount=Amount.ONE_THOUSAND,
                     db_session=db_session,
                 )
-                user = await get_user_from_db_by_tg_id(user_id, db_session)
-                names.append(user.fullname)
+                user = users_by_id.get(user_id)
+                record = await get_record(callback_data.game_id, user_id, db_session)
+                if user:
+                    buy_in = record.buy_in if record else 0
+                    names.append(f"{user.fullname} ({buy_in})")
             text = texts["admin_1000_added_to_players"].format(
                 callback_data.game_id, len(chosen_users), "\n".join(names)
             )
+            logger.info("Game %s: 1000 added to %d players", callback_data.game_id, len(chosen_users))
             await state.update_data(chosen_for_add_1000=list())
         case KeyboardMode.PLAYERS_WITH_0:
             chosen_users = data.get("chosen_for_players_with_0", list())
@@ -365,6 +374,7 @@ async def multiselect_further_handler(
             text = texts["admin_players_with_0"].format(
                 callback_data.game_id, len(chosen_users)
             )
+            logger.info("Game %s: buy-out set to 0 for %d players", callback_data.game_id, len(chosen_users))
             await state.update_data(chosen_for_players_with_0=list())
         case _:
             assert False, "Unexpected mode"
@@ -405,6 +415,7 @@ async def abort_game_handler(
     db_session: AsyncSession,
 ) -> None:
     await callback.answer()
+    logger.info("Game %s aborted by user %s", callback_data.game_id, callback.from_user.id)
     await abort_game(callback_data.game_id, db_session)
     players: list[User] = await get_players_from_game(callback_data.game_id, db_session)
     for player in players:
@@ -423,6 +434,8 @@ async def finish_game_handler(
     db_session: AsyncSession,
 ) -> None:
     await callback.answer()
+    logger.debug("FinishGame: action=%s game_id=%s user_id=%s",
+        callback_data.action, callback_data.game_id, callback.from_user.id)
     match callback_data.action:
         case FinalGameAction.ADD_PLAYERS_WITH_0:
             active_players = await get_players_from_game(
@@ -451,65 +464,24 @@ async def finish_game_handler(
                 callback_data.game_id, db_session
             )
             if remained_players:
+                logger.warning("Game %s: finalization blocked, %d players without buy-out",
+                    callback_data.game_id, remained_players)
                 await callback.message.answer(
                     texts["remained_players"].format(
                         callback_data.game_id, remained_players
                     )
                 )
             else:
-                results = await check_game_balance(callback_data.game_id, db_session)
-                if results.total_pot is None or results.delta is None:
-                    await callback.message.answer(texts["check_game_balance_error"])
-                    return
-                if results.delta > 0:
-                    await callback.message.answer(
-                        text=texts["exit_game_wrong_total_sum>0"].format(
-                            results.total_pot, results.delta
-                        )
-                    )
-                elif results.delta < 0:
-                    await callback.message.answer(
-                        text=texts["exit_game_wrong_total_sum<0"].format(
-                            results.total_pot, abs(results.delta)
-                        )
-                    )
+                logger.info("Game %s: starting finalization", callback_data.game_id)
+                result = await finalize_game(
+                    game_id=callback_data.game_id,
+                    bot=callback.bot,
+                    state=state,
+                    db_session=db_session,
+                )
+                if not result.success and result.error_message:
+                    logger.error("Game %s: finalization failed - %s",
+                        callback_data.game_id, result.error_message)
+                    await callback.message.answer(text=result.error_message)
                 else:
-                    await update_net_profit_and_roi(callback_data.game_id, db_session)
-                    transactions = await debt_calculator(
-                        callback_data.game_id, db_session
-                    )
-                    mvp = await get_mvp(callback_data.game_id, db_session)
-                    mvp_player: User = await get_user_from_db_by_tg_id(mvp, db_session)
-                    await commit_game_results_to_db(
-                        callback_data.game_id, results.total_pot, mvp, db_session
-                    )
-                    mvp_roi = await get_roi_from_game_by_player_id(
-                        callback_data.game_id, mvp, db_session
-                    )
-                    text = await get_group_game_report(
-                        callback_data.game_id, mvp_player.fullname, mvp_roi, db_session
-                    )
-                    await flush_debts_to_db(transactions, db_session)
-                    await debt_informer_by_id(
-                        callback_data.game_id, callback, db_session
-                    )
-                    await callback.bot.send_message(
-                        chat_id=settings.bot.GROUP_ID, text=text
-                    )
-                    data = await state.get_data()
-                    if data.get("next_game_yearly_stats"):
-                        game = await get_game_by_id(callback_data.game_id, db_session)
-                        created_at = game.created_at
-                        if created_at.tzinfo is None:
-                            created_at = created_at.replace(
-                                tzinfo=settings.bot.TIMEZONE
-                            )
-                        year = created_at.astimezone(settings.bot.TIMEZONE).year
-                        summary, players = await get_yearly_stats(year, db_session)
-                        yearly_text = generate_yearly_stats_report(
-                            year, summary, players
-                        )
-                        await callback.bot.send_message(
-                            chat_id=settings.bot.GROUP_ID, text=yearly_text
-                        )
-                        await state.update_data(next_game_yearly_stats=False)
+                    logger.info("Game %s: finalization completed successfully", callback_data.game_id)
