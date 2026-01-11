@@ -70,6 +70,11 @@ class DebtAction(IntEnum):
     COMPLETE_DEBT = auto()
 
 
+class DebtStatsView(IntEnum):
+    I_OWE = auto()
+    OWE_ME = auto()
+
+
 class States(StatesGroup):
     ENTER_BUY_OUT = State()
     ADD_ADMIN = State()

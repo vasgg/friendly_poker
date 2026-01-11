@@ -49,6 +49,20 @@ async def _save_last_pinned_poll_id(group_id: int, message_id: int | None) -> No
         logger.exception("Failed to save last pinned poll id for chat %s", group_id)
 
 
+async def unpin_current_poll(bot: Bot, group_id: int) -> None:
+    try:
+        message_id = await _load_last_pinned_poll_id(group_id)
+        if message_id is None:
+            logger.debug("No pinned poll to unpin for chat %s", group_id)
+            return
+
+        await bot.unpin_chat_message(chat_id=group_id, message_id=message_id)
+        await _save_last_pinned_poll_id(group_id, None)
+        logger.info("Unpinned poll message %s in chat %s after game finalization", message_id, group_id)
+    except Exception:
+        logger.exception("Failed to unpin poll in chat %s", group_id)
+
+
 def _next_friday_13(now: datetime) -> datetime:
     now = now.astimezone(TZ)
     target_t = time(hour=13, tzinfo=TZ)
@@ -85,7 +99,7 @@ async def _send_poll(bot: Bot, group_id: int) -> None:
         allows_multiple_answers=False,
     )
     try:
-        prev_id = _load_last_pinned_poll_id(group_id)
+        prev_id = await _load_last_pinned_poll_id(group_id)
         if prev_id is not None:
             try:
                 await bot.unpin_chat_message(chat_id=group_id, message_id=prev_id)
@@ -107,7 +121,7 @@ async def _send_poll(bot: Bot, group_id: int) -> None:
         logger.info(
             "Pinned weekly poll message %s in chat %s", msg.message_id, group_id
         )
-        _save_last_pinned_poll_id(group_id, msg.message_id)
+        await _save_last_pinned_poll_id(group_id, msg.message_id)
     except Exception:
         logger.exception("Failed to pin poll message in chat %s", group_id)
 

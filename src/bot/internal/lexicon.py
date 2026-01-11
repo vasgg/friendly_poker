@@ -10,7 +10,6 @@ texts = {
     'admin_players_with_0_dialog': 'Choose players to set BUY-OUT to 0',
     'admin_players_buyout_dialog': 'Choose player to set BUY-OUT',
     'admin_set_buyout_dialog': 'Enter BUY-OUT value for {}',
-    'admin_buyout_set_reply': 'Enter BUY-OUT value for {}',
     'admin_statistics': '...',
     'user_statistics': '...',
     'insufficient_privileges': 'You can\'t perform this action.',
@@ -59,6 +58,10 @@ texts = {
                            'Do you receive payment?',
     'debt_complete': 'GAME <b>{:02}</b>. DEBT REPORT <b>#{}</b>:\n\n'
                      '<b>{}</b> marked debt as paid. Amount: <b>{:.2f} GEL</b>.',
+    'debt_marked_as_paid_confirmation': 'GAME <b>{:02}</b>. DEBT <b>#{}</b>:\n\n'
+                                        'Your payment of <b>{:.2f} GEL</b> to <b>{}</b> has been sent for confirmation.',
+    'debt_complete_confirmation': 'GAME <b>{:02}</b>. DEBT <b>#{}</b>:\n\n'
+                                  'Payment of <b>{:.2f} GEL</b> from <b>{}</b> confirmed.',
     'debt_incomplete': 'GAME {:02}. DEBT REPORT #{}:\n\n'
                        '<b>{}</b> marked debt as unpaid!\n',
     'settings_updated': 'Settings updated.',
@@ -70,14 +73,23 @@ texts = {
                            'MVP awards: <b>{}</b>\n'
                            'Total BUY-IN: <b>{}</b>\n'
                            'Total BUY-OUT: <b>{}</b>\n'
-                           'Total ROI: <b>{}</b>\n',
+                           'Total ROI: <b>{}</b>',
     'player_stats_outgame': '<b>Stats:</b>\n'
                             'Games played: <b>{}</b>\n'
                             'Games hosted: <b>{}</b>\n'
                             'MVP awards: <b>{}</b>\n'
                             'Total BUY-IN: <b>{}</b>\n'
                             'Total BUY-OUT: <b>{}</b>\n'
-                            'Total ROI: <b>{}</b>\n',
+                            'Total ROI: <b>{}</b>',
+    'stats_debts_header': '\n\n___________________\n<b>Debts:</b>',
+    'stats_debts_you_owe': '\n\n<b>You owe:</b>',
+    'stats_debts_owed_to_you': '\n\n<b>Owed to you:</b>',
+    'stats_debt_line': '\n• Game {:02}: <b>{:.2f} GEL</b> → {}',
+    'stats_no_debts': '\n\nNo unpaid debts',
+    'stats_debt_aggregated': '\n• {}: <b>{:.2f} GEL</b>',
+    'stats_debt_detail_header': '<b>Debt details:</b>',
+    'stats_debt_detail_i_owe': '\n\n<b>You owe:</b>',
+    'stats_debt_detail_owe_me': '\n\n<b>Owed to you:</b>',
     'admin_stats_ingame': '',
     'admin_stats_outgame': '',
 
@@ -104,6 +116,8 @@ buttons = {
     'add_players_with_0': 'Add players with 0',
     'add_players_buyout': 'Add players BUYOUT',
     'finalize_game': 'Finalize game',
+    'debt_stats_i_owe': 'I owe',
+    'debt_stats_owe_me': 'Owe me',
 }
 
 ORDER = ["IBAN", "bank", "name_surname"]

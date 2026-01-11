@@ -18,8 +18,8 @@ async def on_startup(bot: Bot, settings: Settings):
             f"<b>{folder.replace('_', ' ')} started</b>\n\n/start",
             disable_notification=True,
         )
-    except:
-        logger.warning("Failed to send on shutdown notify")
+    except Exception:
+        logger.warning("Failed to send on startup notify")
 
 
 async def on_shutdown(bot: Bot, settings: Settings):
@@ -30,7 +30,7 @@ async def on_shutdown(bot: Bot, settings: Settings):
             f"<b>{folder.replace('_', ' ')} shutdown</b>",
             disable_notification=True,
         )
-    except:
+    except Exception:
         logger.warning("Failed to send on shutdown notify")
 
 

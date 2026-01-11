@@ -5,6 +5,7 @@ from bot.internal.callbacks import (
     AbortDialogCbData,
     AddFundsOperationType,
     DebtActionCbData,
+    DebtStatsCbData,
     FinishGameCbData,
     GameMenuCbData,
     SinglePlayerActionCbData,
@@ -16,6 +17,7 @@ from bot.internal.callbacks import (
 from bot.internal.lexicon import buttons
 from bot.internal.context import (
     DebtAction,
+    DebtStatsView,
     FinalGameAction,
     GameAction,
     GameStatus,
@@ -221,3 +223,19 @@ async def get_paid_button_confirmation(debt_id, chat_id):
             # ],
         ],
     )
+
+
+def debt_stats_kb(has_debts_i_owe: bool, has_debts_owe_me: bool) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    if has_debts_i_owe:
+        builder.button(
+            text=buttons["debt_stats_i_owe"],
+            callback_data=DebtStatsCbData(view=DebtStatsView.I_OWE).pack(),
+        )
+    if has_debts_owe_me:
+        builder.button(
+            text=buttons["debt_stats_owe_me"],
+            callback_data=DebtStatsCbData(view=DebtStatsView.OWE_ME).pack(),
+        )
+    builder.adjust(2)
+    return builder.as_markup()

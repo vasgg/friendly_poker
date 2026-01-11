@@ -2,6 +2,7 @@ from aiogram.filters.callback_data import CallbackData
 
 from bot.internal.context import (
     DebtAction,
+    DebtStatsView,
     FinalGameAction,
     GameAction,
     KeyboardMode,
@@ -58,3 +59,7 @@ class DebtActionCbData(CallbackData, prefix="debt_action"):
 
 class GameModeCbData(CallbackData, prefix="game_mode"):
     ratio: int
+
+
+class DebtStatsCbData(CallbackData, prefix="debt_stats"):
+    view: DebtStatsView
