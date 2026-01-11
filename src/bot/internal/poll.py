@@ -3,6 +3,8 @@ from datetime import datetime, timedelta, time
 import logging
 from zoneinfo import ZoneInfo
 from aiogram import Bot
+import aiofiles
+import aiofiles.os
 import json
 from pathlib import Path
 from typing import Optional
@@ -13,28 +15,36 @@ TZ = ZoneInfo("Asia/Tbilisi")
 _PINS_FILE = Path(__file__).resolve().parent / "poll_pins.json"
 
 
-def _load_last_pinned_poll_id(group_id: int) -> Optional[int]:
+async def _load_last_pinned_poll_id(group_id: int) -> Optional[int]:
     try:
-        if _PINS_FILE.exists():
-            data = json.loads(_PINS_FILE.read_text(encoding="utf-8"))
-            val = data.get(str(group_id))
-            return int(val) if val is not None else None
+        if await aiofiles.os.path.exists(_PINS_FILE):
+            async with aiofiles.open(_PINS_FILE, mode="r", encoding="utf-8") as f:
+                content = await f.read()
+                data = json.loads(content)
+                val = data.get(str(group_id))
+                return int(val) if val is not None else None
     except Exception:
         logger.exception("Failed to load last pinned poll id for chat %s", group_id)
     return None
 
 
-def _save_last_pinned_poll_id(group_id: int, message_id: int) -> None:
+async def _save_last_pinned_poll_id(group_id: int, message_id: int | None) -> None:
     try:
         data = {}
-        if _PINS_FILE.exists():
+        if await aiofiles.os.path.exists(_PINS_FILE):
             try:
-                data = json.loads(_PINS_FILE.read_text(encoding="utf-8"))
+                async with aiofiles.open(_PINS_FILE, mode="r", encoding="utf-8") as f:
+                    content = await f.read()
+                    data = json.loads(content)
             except Exception:
                 logger.warning("Pins file corrupted, recreating")
                 data = {}
-        data[str(group_id)] = message_id
-        _PINS_FILE.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+        if message_id is None:
+            data.pop(str(group_id), None)
+        else:
+            data[str(group_id)] = message_id
+        async with aiofiles.open(_PINS_FILE, mode="w", encoding="utf-8") as f:
+            await f.write(json.dumps(data, ensure_ascii=False))
     except Exception:
         logger.exception("Failed to save last pinned poll id for chat %s", group_id)
 
