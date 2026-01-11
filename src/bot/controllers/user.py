@@ -17,7 +17,7 @@ async def add_user_to_db(
         id=user.id, fullname=user.full_name, username=user.username, is_admin=is_admin
     )
     db_session.add(new_user)
-    await db_session.commit()
+    await db_session.flush()
     logger.info(f"New user created: {new_user}")
     return new_user
 

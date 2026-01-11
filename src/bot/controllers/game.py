@@ -65,10 +65,10 @@ async def get_active_game(db_session: AsyncSession) -> Game | None:
     return game
 
 
-async def get_game_by_id(game_id: int, db_session: AsyncSession) -> Game:
+async def get_game_by_id(game_id: int, db_session: AsyncSession) -> Game | None:
     query = select(Game).where(Game.id == game_id)
     result = await db_session.execute(query)
-    return result.unique().scalar_one()
+    return result.unique().scalar_one_or_none()
 
 
 async def create_game(
@@ -94,8 +94,10 @@ async def commit_game_results_to_db(
     game_id: int, total_pot: int, mvp_id: int, db_session: AsyncSession
 ) -> None:
     now = datetime.now(settings.bot.TIMEZONE)
-    game: Game = await get_game_by_id(game_id, db_session)
-    start_time: datetime = game.created_at
+    game = await get_game_by_id(game_id, db_session)
+    if game is None:
+        return
+    start_time = game.created_at
     if start_time.tzinfo is None:
         start_time = start_time.replace(tzinfo=settings.bot.TIMEZONE)
     delta = now - start_time
@@ -112,36 +114,6 @@ async def commit_game_results_to_db(
         )
     )
     await db_session.execute(close_game)
-
-
-def format_player_line(name: str, amount: int) -> str:
-    width = 50
-    max_name_len = 20
-    max_amount_len = 8
-    dots = "."
-
-    formatted_name = (
-        (name[: max_name_len - 1] + "…") if len(name) > max_name_len else name
-    )
-
-    formatted_amount = f"{amount:>{max_amount_len}}"
-
-    dots_count = width - len(formatted_name) - len(formatted_amount) - 4
-    dots_str = dots * max(dots_count, 1)
-
-    return f"│ {formatted_name} {dots_str} {formatted_amount} │"
-
-
-def generate_poker_report(players: list) -> str:
-    width = 50
-    top_border = "┌" + "─" * (width - 2) + "┐"
-    bottom_border = "└" + "─" * (width - 2) + "┘"
-    separator = "├" + "─" * (width - 2) + "┤"
-    header = f"│ {'Игроки':<{width - 2}} │"
-
-    player_lines = [format_player_line(name, amount) for name, amount in players]
-
-    return "\n".join([top_border, header, separator] + player_lines + [bottom_border])
 
 
 def format_duration(seconds: int) -> str:
@@ -408,14 +380,16 @@ def generate_yearly_stats_report(
 
 
 async def get_group_game_report(
-    game_id: int, name: str, roi: int, db_session: AsyncSession
+    game_id: int, name: str, roi: float, db_session: AsyncSession
 ) -> str:
-    game: Game = await get_game_by_id(game_id, db_session)
-    duration = format_duration(game.duration)
+    game = await get_game_by_id(game_id, db_session)
+    if game is None:
+        return f"Game {game_id} not found"
+    duration = format_duration(game.duration or 0)
     text = texts["global_game_report"].format(
         game_id,
         duration,
-        game.total_pot,
+        game.total_pot or 0,
         name,
         roi,
     )
@@ -423,25 +397,25 @@ async def get_group_game_report(
 
 
 async def games_hosting_count(user_id: int, db_session: AsyncSession) -> int:
-    query = select(Game).where(Game.host_id == user_id)
+    query = select(func.count()).select_from(Game).where(Game.host_id == user_id)
     result = await db_session.execute(query)
-    return len(result.unique().scalars().all())
+    return result.scalar_one()
 
 
 async def games_playing_count(user_id: int, db_session: AsyncSession) -> int:
     query = (
-        select(Game)
+        select(func.count(func.distinct(Game.id)))
         .join(Record, Game.id == Record.game_id)
         .where(Record.user_id == user_id)
     )
     result = await db_session.execute(query)
-    return len(result.unique().scalars().all())
+    return result.scalar_one()
 
 
 async def get_mvp_count(user_id: int, db_session: AsyncSession) -> int:
-    query = select(Game).where(Game.mvp_id == user_id)
+    query = select(func.count()).select_from(Game).where(Game.mvp_id == user_id)
     result = await db_session.execute(query)
-    return len(result.unique().scalars().all())
+    return result.scalar_one()
 
 
 async def get_player_total_buy_in(user_id: int, db_session: AsyncSession) -> int:

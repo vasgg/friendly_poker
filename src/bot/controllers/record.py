@@ -24,10 +24,10 @@ async def create_record(game_id: int, user_id: int, db_session: AsyncSession) ->
     return new_record
 
 
-async def get_record(game_id: int, user_id: int, db_session: AsyncSession) -> Record:
+async def get_record(game_id: int, user_id: int, db_session: AsyncSession) -> Record | None:
     query = select(Record).filter(Record.game_id == game_id, Record.user_id == user_id)
     result = await db_session.execute(query)
-    return result.unique().scalar_one()
+    return result.unique().scalar_one_or_none()
 
 
 async def update_record(
@@ -36,10 +36,13 @@ async def update_record(
     mode: RecordUpdateMode,
     value: int,
     db_session: AsyncSession,
-) -> Record:
+) -> Record | None:
     query = select(Record).filter(Record.game_id == game_id, Record.user_id == user_id)
     result = await db_session.execute(query)
     record = result.unique().scalar_one_or_none()
+    if record is None:
+        logger.warning(f"Record not found for game_id={game_id}, user_id={user_id}")
+        return None
     field = "buy in" if mode == RecordUpdateMode.UPDATE_BUY_IN else "buy out"
     match mode:
         case RecordUpdateMode.UPDATE_BUY_IN:
@@ -144,7 +147,7 @@ async def get_mvp(game_id: int, db_session: AsyncSession):
 
 async def get_roi_from_game_by_player_id(
     game_id: int, player_id: int, db_session: AsyncSession
-):
+) -> float | None:
     query = select(Record.ROI).where(
         Record.game_id == game_id, Record.user_id == player_id
     )
