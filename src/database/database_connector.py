@@ -13,6 +13,9 @@ class DatabaseConnector:
             autoflush=False,
         )
 
+    async def dispose(self) -> None:
+        await self.engine.dispose()
+
 
 def get_db() -> DatabaseConnector:
     return DatabaseConnector(url=settings.db.aiosqlite_db_url, echo=settings.db.echo)

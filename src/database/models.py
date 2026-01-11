@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import BigInteger, ForeignKey, String, func, Integer
+from sqlalchemy import BigInteger, ForeignKey, Index, String, Integer
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from bot.internal.context import GameStatus
@@ -64,6 +64,7 @@ class User(Base):
 
 class Game(Base):
     __tablename__ = "games"
+    __table_args__ = (Index("ix_games_status", "status"),)
 
     status: Mapped[GameStatus] = mapped_column(default=GameStatus.ACTIVE)
     admin_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"))
@@ -100,6 +101,7 @@ class Game(Base):
 
 class Record(Base):
     __tablename__ = "records"
+    __table_args__ = (Index("ix_records_game_user", "game_id", "user_id"),)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     game_id: Mapped[int] = mapped_column(ForeignKey("games.id", ondelete="CASCADE"))
@@ -129,6 +131,7 @@ class Record(Base):
 
 class Debt(Base):
     __tablename__ = "debts"
+    __table_args__ = (Index("ix_debts_game_id", "game_id"),)
 
     game_id: Mapped[int] = mapped_column(ForeignKey("games.id"), nullable=False)
     creditor_id: Mapped[int] = mapped_column(ForeignKey("users.id"))

@@ -38,9 +38,14 @@ async def main():
     )
     db = get_db()
 
+    async def dispose_db(*args, **kwargs):
+        await db.dispose()
+        logging.info("Database connection pool disposed")
+
     dispatcher.update.outer_middleware(UpdatesDumperMiddleware())
     dispatcher.startup.register(on_startup)
     dispatcher.shutdown.register(on_shutdown)
+    dispatcher.shutdown.register(dispose_db)
     dispatcher.startup.register(set_bot_commands)
     db_session_middleware = DBSessionMiddleware(db)
     dispatcher.message.middleware(db_session_middleware)
