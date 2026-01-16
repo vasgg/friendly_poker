@@ -84,7 +84,7 @@ texts = {
     'stats_debts_header': '\n\n___________________\n<b>Debts:</b>',
     'stats_debts_you_owe': '\n\n<b>You owe:</b>',
     'stats_debts_owed_to_you': '\n\n<b>Owed to you:</b>',
-    'stats_debt_line': '\n• Game {:02}: <b>{:.2f} GEL</b> → {}',
+    'stats_debt_line': '\n• Game {:02} ({}): <b>{:.2f} GEL</b> → {}',
     'stats_no_debts': '\n\nNo unpaid debts',
     'stats_debt_aggregated': '\n• {}: <b>{:.2f} GEL</b>',
     'stats_debt_detail_header': '<b>Debt details:</b>',

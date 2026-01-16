@@ -131,8 +131,9 @@ async def debt_stats_handler(
         for debt in debts:
             amount = calculate_debt_amount(debt.amount, debt.game.ratio)
             creditor_name = debt.creditor.fullname
+            game_date = debt.game.created_at.strftime("%d.%m.%Y")
             response += texts["stats_debt_line"].format(
-                debt.game_id, amount, creditor_name
+                debt.game_id, game_date, amount, creditor_name
             )
     else:
         debts = await get_unpaid_debts_as_creditor(user.id, db_session)
@@ -143,8 +144,9 @@ async def debt_stats_handler(
         for debt in debts:
             amount = calculate_debt_amount(debt.amount, debt.game.ratio)
             debtor_name = debt.debtor.fullname
+            game_date = debt.game.created_at.strftime("%d.%m.%Y")
             response += texts["stats_debt_line"].format(
-                debt.game_id, amount, debtor_name
+                debt.game_id, game_date, amount, debtor_name
             )
 
     await callback.message.answer(response)

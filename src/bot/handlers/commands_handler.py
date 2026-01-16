@@ -1,4 +1,4 @@
-from aiogram import Router
+from aiogram import F, Router
 from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
@@ -66,7 +66,7 @@ async def settings_start(
     await message.answer(question)
 
 
-@router.message(Command("stats"))
+@router.message(Command("stats"), F.chat.type == "private")
 async def stats_command(message: Message, user: User, db_session: AsyncSession):
     games_hosted = await games_hosting_count(user.id, db_session)
     games_played = await games_playing_count(user.id, db_session)
