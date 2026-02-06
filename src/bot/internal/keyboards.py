@@ -225,6 +225,36 @@ async def get_paid_button_confirmation(debt_id, chat_id):
     )
 
 
+def debt_details_i_owe_kb(debts, user_id: int) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    for debt in debts:
+        builder.button(
+            text=buttons["debt_detail_paid"].format(debt.game_id, debt.creditor.fullname),
+            callback_data=DebtActionCbData(
+                action=DebtAction.MARK_AS_PAID,
+                debt_id=debt.id,
+                chat_id=user_id,
+            ).pack(),
+        )
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def debt_details_owe_me_kb(debts, user_id: int) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    for debt in debts:
+        builder.button(
+            text=buttons["debt_detail_remind"].format(debt.game_id, debt.debtor.fullname),
+            callback_data=DebtActionCbData(
+                action=DebtAction.REMIND_DEBTOR,
+                debt_id=debt.id,
+                chat_id=user_id,
+            ).pack(),
+        )
+    builder.adjust(1)
+    return builder.as_markup()
+
+
 def debt_stats_kb(has_debts_i_owe: bool, has_debts_owe_me: bool) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     if has_debts_i_owe:

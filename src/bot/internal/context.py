@@ -68,6 +68,7 @@ class DebtAction(IntEnum):
     MARK_AS_PAID = auto()
     MARK_AS_UNPAID = auto()
     COMPLETE_DEBT = auto()
+    REMIND_DEBTOR = auto()
 
 
 class DebtStatsView(IntEnum):

@@ -92,6 +92,7 @@ texts = {
     'stats_debt_detail_owe_me': '\n\n<b>Owed to you:</b>',
     'admin_stats_ingame': '',
     'admin_stats_outgame': '',
+    'debt_remind_sent': 'Reminder sent to {}.',
 
 }
 
@@ -118,6 +119,8 @@ buttons = {
     'finalize_game': 'Finalize game',
     'debt_stats_i_owe': 'I owe',
     'debt_stats_owe_me': 'Owe me',
+    'debt_detail_paid': '#{:02} Paid \u2192 {}',
+    'debt_detail_remind': '#{:02} Remind \u2192 {}',
 }
 
 ORDER = ["IBAN", "bank", "name_surname"]

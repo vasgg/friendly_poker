@@ -20,7 +20,12 @@ from bot.internal.notify_admin import send_message_to_player
 from bot.internal.callbacks import DebtActionCbData, DebtStatsCbData
 from bot.internal.lexicon import texts
 from bot.internal.context import DebtAction, DebtStatsView
-from bot.internal.keyboards import get_paid_button_confirmation
+from bot.internal.keyboards import (
+    debt_details_i_owe_kb,
+    debt_details_owe_me_kb,
+    get_paid_button_confirmation,
+)
+from bot.services.debt_notification import send_debtor_notification
 from database.models import User
 
 logger = logging.getLogger(__name__)
@@ -110,6 +115,23 @@ async def debt_handler(
                     chat_id=debtor.id, message_id=debt.debt_message_id
                 )
             logger.info("Debt %s completed by creditor %s", debt.id, creditor.id)
+        case DebtAction.REMIND_DEBTOR:
+            await send_debtor_notification(
+                bot=callback.bot,
+                debt=debt,
+                debtor=debtor,
+                amount=amount,
+                creditor_username=creditor_username,
+                creditor=creditor,
+                db_session=db_session,
+            )
+            await callback.message.answer(
+                texts["debt_remind_sent"].format(debtor_username)
+            )
+            logger.info(
+                "Debt %s reminder sent to debtor %s by creditor %s",
+                debt.id, debtor.id, creditor.id,
+            )
 
 
 @router.callback_query(DebtStatsCbData.filter())
@@ -135,6 +157,7 @@ async def debt_stats_handler(
             response += texts["stats_debt_line"].format(
                 debt.game_id, game_date, amount, creditor_name
             )
+        keyboard = debt_details_i_owe_kb(debts, user.id)
     else:
         debts = await get_unpaid_debts_as_creditor(user.id, db_session)
         if not debts:
@@ -148,5 +171,6 @@ async def debt_stats_handler(
             response += texts["stats_debt_line"].format(
                 debt.game_id, game_date, amount, debtor_name
             )
+        keyboard = debt_details_owe_me_kb(debts, user.id)
 
-    await callback.message.answer(response)
+    await callback.message.answer(response, reply_markup=keyboard)
