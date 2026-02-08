@@ -1,10 +1,10 @@
 from contextlib import suppress
-from datetime import datetime
+from datetime import UTC, datetime
 import logging
 
 from aiogram import Router
 from aiogram.exceptions import TelegramBadRequest
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, InlineKeyboardMarkup
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.config import settings
@@ -30,6 +30,19 @@ from database.models import User
 
 logger = logging.getLogger(__name__)
 router = Router()
+
+
+def _remove_clicked_button(
+    markup: InlineKeyboardMarkup | None, callback_data: str
+) -> InlineKeyboardMarkup | None:
+    if not markup:
+        return None
+    rows = []
+    for row in markup.inline_keyboard:
+        filtered = [btn for btn in row if btn.callback_data != callback_data]
+        if filtered:
+            rows.append(filtered)
+    return InlineKeyboardMarkup(inline_keyboard=rows) if rows else None
 
 
 @router.callback_query(DebtActionCbData.filter())
@@ -65,15 +78,12 @@ async def debt_handler(
     amount = calculate_debt_amount(debt.amount, game.ratio)
     match callback_data.action:
         case DebtAction.MARK_AS_PAID:
-            try:
-                await callback.message.edit_reply_markup()
-            except TelegramBadRequest:
-                await callback.message.answer(
-                    texts["debt_marked_as_paid_confirmation"].format(
-                        debt.game_id, debt.id, amount, creditor_username
-                    )
-                )
-            await send_message_to_player(
+            updated_markup = _remove_clicked_button(
+                callback.message.reply_markup, callback.data
+            )
+            with suppress(TelegramBadRequest):
+                await callback.message.edit_reply_markup(reply_markup=updated_markup)
+            msg = await send_message_to_player(
                 callback.bot,
                 user_id=creditor.id,
                 fullname=creditor.fullname,
@@ -82,6 +92,12 @@ async def debt_handler(
                 ),
                 reply_markup=await get_paid_button_confirmation(debt.id, creditor.id),
             )
+            if msg:
+                await callback.message.answer(
+                    texts["debt_paid_notification_sent"].format(creditor_username)
+                )
+            else:
+                await callback.message.answer(texts["bot_blocked_by_user"])
             debt.is_paid = True
             db_session.add(debt)
             await db_session.flush()
@@ -98,11 +114,11 @@ async def debt_handler(
                     )
                 )
             debt.is_paid = True
-            debt.paid_at = datetime.now(settings.bot.TIMEZONE)
+            debt.paid_at = datetime.now(UTC)
             db_session.add(debt)
             await db_session.flush()
 
-            await send_message_to_player(
+            msg = await send_message_to_player(
                 callback.bot,
                 user_id=debtor.id,
                 fullname=debtor.fullname,
@@ -110,13 +126,19 @@ async def debt_handler(
                     debt.game_id, debt.id, creditor_username, amount
                 ),
             )
+            if msg:
+                await callback.message.answer(
+                    texts["debt_complete_notification_sent"].format(debtor_username)
+                )
+            else:
+                await callback.message.answer(texts["bot_blocked_by_user"])
             with suppress(TelegramBadRequest):
                 await callback.bot.delete_message(
                     chat_id=debtor.id, message_id=debt.debt_message_id
                 )
             logger.info("Debt %s completed by creditor %s", debt.id, creditor.id)
         case DebtAction.REMIND_DEBTOR:
-            await send_debtor_notification(
+            sent = await send_debtor_notification(
                 bot=callback.bot,
                 debt=debt,
                 debtor=debtor,
@@ -125,9 +147,17 @@ async def debt_handler(
                 creditor=creditor,
                 db_session=db_session,
             )
-            await callback.message.answer(
-                texts["debt_remind_sent"].format(debtor_username)
+            updated_markup = _remove_clicked_button(
+                callback.message.reply_markup, callback.data
             )
+            with suppress(TelegramBadRequest):
+                await callback.message.edit_reply_markup(reply_markup=updated_markup)
+            if sent:
+                await callback.message.answer(
+                    texts["debt_remind_sent"].format(debtor_username)
+                )
+            else:
+                await callback.message.answer(texts["bot_blocked_by_user"])
             logger.info(
                 "Debt %s reminder sent to debtor %s by creditor %s",
                 debt.id, debtor.id, creditor.id,
@@ -153,7 +183,7 @@ async def debt_stats_handler(
         for debt in debts:
             amount = calculate_debt_amount(debt.amount, debt.game.ratio)
             creditor_name = debt.creditor.fullname
-            game_date = debt.game.created_at.strftime("%d.%m.%Y")
+            game_date = debt.game.created_at.replace(tzinfo=UTC).astimezone(settings.bot.TIMEZONE).strftime("%d.%m.%Y")
             response += texts["stats_debt_line"].format(
                 debt.game_id, game_date, amount, creditor_name
             )
@@ -167,7 +197,7 @@ async def debt_stats_handler(
         for debt in debts:
             amount = calculate_debt_amount(debt.amount, debt.game.ratio)
             debtor_name = debt.debtor.fullname
-            game_date = debt.game.created_at.strftime("%d.%m.%Y")
+            game_date = debt.game.created_at.replace(tzinfo=UTC).astimezone(settings.bot.TIMEZONE).strftime("%d.%m.%Y")
             response += texts["stats_debt_line"].format(
                 debt.game_id, game_date, amount, debtor_name
             )

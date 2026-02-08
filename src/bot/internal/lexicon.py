@@ -16,11 +16,11 @@ texts = {
     'choose_host': 'Choose a host.',
     'incorrect_buyout_value': 'Incorrect BUY-OUT value.',
     'game_already_active': 'There is already an active game. Please finish it first.',
+    'no_active_game': 'No active game.',
     'select_mode_prompt': 'Choose ratio for the next game.',
     'ratio_set': 'Next game ratio set to x{}.',
     'yearly_stats_set': 'Yearly stats will be shown after the next game.',
 
-    'add_photo': 'Send me photo of the event',
     'add_funds_selector': 'Select type of add funds operation',
     'add_funds_multiselect': 'Choose players to add 1000',
     'add_funds_to_single_player': 'Choose player to add funds',
@@ -93,6 +93,10 @@ texts = {
     'admin_stats_ingame': '',
     'admin_stats_outgame': '',
     'debt_remind_sent': 'Reminder sent to {}.',
+    'debt_paid_notification_sent': 'Payment notification sent to {}.',
+    'debt_complete_notification_sent': 'Confirmation sent to {}.',
+    'bot_blocked_by_user': 'Bot is blocked by this user.',
+    'photo_missing_warning': 'No photo for this game yet. Take a photo or skip.',
 
 }
 
@@ -100,14 +104,12 @@ texts = {
 buttons = {
     'menu_add_players': 'Add players',
     'menu_add_funds': 'Add funds',
-    'menu_add_photo': 'Add photo',
     'menu_finish_game': 'Finish game',
     'menu_abort_game': 'Abort game',
     'menu_start_game': 'Start game',
     'menu_statistics': 'Statistics',
     'menu_select_ratio': 'Choose ratio',
     'menu_select_yearly_stats': 'Yearly stats next game',
-    'cancel_button': 'Cancel',
     'futher_button': 'Further',
     'multi_selector': 'Add 1000',
     'single_selector': 'Custom',
@@ -121,6 +123,7 @@ buttons = {
     'debt_stats_owe_me': 'Owe me',
     'debt_detail_paid': '#{:02} Paid \u2192 {}',
     'debt_detail_remind': '#{:02} Remind \u2192 {}',
+    'skip_photo': 'Ignore',
 }
 
 ORDER = ["IBAN", "bank", "name_surname"]

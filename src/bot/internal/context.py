@@ -36,7 +36,6 @@ class GameAction(IntEnum):
     FINISH_GAME = auto()
     ABORT_GAME = auto()
     ADD_FUNDS = auto()
-    ADD_PHOTO = auto()
     STATISTICS = auto()
     SELECT_RATIO = auto()
     SELECT_YEARLY_STATS = auto()
@@ -62,6 +61,7 @@ class FinalGameAction(IntEnum):
     ADD_PLAYERS_WITH_0 = auto()
     ADD_PLAYERS_BUYOUT = auto()
     FINALIZE_GAME = auto()
+    SKIP_PHOTO_AND_FINALIZE = auto()
 
 
 class DebtAction(IntEnum):
@@ -80,4 +80,3 @@ class States(StatesGroup):
     ENTER_BUY_OUT = State()
     ADD_ADMIN = State()
     DELETE_ADMIN = State()
-    ADD_PHOTO = State()

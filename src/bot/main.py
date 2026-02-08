@@ -18,6 +18,7 @@ from bot.handlers.states_handler import router as states_router
 from bot.handlers.debt_handlers import router as debts_router
 from bot.handlers.callbacks_handlers import router as callbacks_router
 from bot.handlers.errors_handler import router as errors_router
+from bot.handlers.photo_handler import router as photo_router
 from bot.internal.config_dicts import initial_setup
 
 from bot.config import settings
@@ -60,6 +61,7 @@ async def main():
         errors_router,
         states_router,
         debts_router,
+        photo_router,
     )
 
     logging.info("friendly poker bot started")

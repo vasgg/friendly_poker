@@ -60,7 +60,7 @@ async def send_debtor_notification(
     creditor_username: str,
     creditor: User,
     db_session: AsyncSession,
-) -> None:
+) -> bool:
     debtor_text = format_debtor_message(debt, amount, creditor_username, creditor)
 
     msg = await send_message_to_player(
@@ -79,6 +79,8 @@ async def send_debtor_notification(
             debtor.id,
             debt.id,
         )
+        return True
+    return False
 
 
 async def send_creditor_notification(

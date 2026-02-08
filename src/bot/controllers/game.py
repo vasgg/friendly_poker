@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 import html
 import logging
 
@@ -73,7 +73,11 @@ async def get_game_by_id(game_id: int, db_session: AsyncSession) -> Game | None:
 
 async def create_game(
     admin_id: int, host_id: int, db_session: AsyncSession, ratio: int = 1
-) -> Game:
+) -> Game | None:
+    existing = await get_active_game(db_session)
+    if existing is not None:
+        logger.warning("Cannot create game: active game %s already exists", existing.id)
+        return None
     new_game = Game(
         admin_id=admin_id,
         host_id=host_id,
@@ -93,13 +97,13 @@ async def abort_game(game_id: int, db_session: AsyncSession) -> None:
 async def commit_game_results_to_db(
     game_id: int, total_pot: int, mvp_id: int, db_session: AsyncSession
 ) -> None:
-    now = datetime.now(settings.bot.TIMEZONE)
+    now = datetime.now(UTC)
     game = await get_game_by_id(game_id, db_session)
     if game is None:
         return
     start_time = game.created_at
     if start_time.tzinfo is None:
-        start_time = start_time.replace(tzinfo=settings.bot.TIMEZONE)
+        start_time = start_time.replace(tzinfo=UTC)
     delta = now - start_time
 
     duration_in_seconds = int(delta.total_seconds())

@@ -1,5 +1,6 @@
 import logging
 from dataclasses import dataclass
+from datetime import UTC
 
 from aiogram import Bot
 from aiogram.fsm.context import FSMContext
@@ -7,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.config import settings
 from bot.controllers.debt import flush_debts_to_db
+from bot.services.photo_reminder import cancel_photo_reminder
 from bot.services.debt_notification import notify_all_debts
 from bot.controllers.game import (
     commit_game_results_to_db,
@@ -123,7 +125,7 @@ async def send_yearly_stats_if_enabled(
 
     created_at = game.created_at
     if created_at.tzinfo is None:
-        created_at = created_at.replace(tzinfo=settings.bot.TIMEZONE)
+        created_at = created_at.replace(tzinfo=UTC)
 
     year = created_at.astimezone(settings.bot.TIMEZONE).year
     summary, players = await get_yearly_stats(year, db_session)
@@ -141,6 +143,7 @@ async def finalize_game(
     db_session: AsyncSession,
 ) -> FinalizationResult:
     logger.info("Starting finalization of game %s", game_id)
+    cancel_photo_reminder(game_id)
 
     # Step 1: Validate balance
     results = await check_game_balance(game_id, db_session)

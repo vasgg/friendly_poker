@@ -9,7 +9,6 @@ from bot.internal.callbacks import (
     FinishGameCbData,
     GameMenuCbData,
     SinglePlayerActionCbData,
-    CancelCbData,
     MultiselectFurtherCbData,
     PlayerCbData,
     GameModeCbData,
@@ -39,8 +38,7 @@ def choose_single_player_kb(
                 mode=mode, player_id=player.id, game_id=game_id
             ).pack(),
         )
-    builder.button(text=buttons["cancel_button"], callback_data=CancelCbData().pack())
-    builder.adjust(*([2] * (len(players) // 2)) + [1])
+    builder.adjust(2)
     return builder.as_markup()
 
 
@@ -68,7 +66,6 @@ def confirmation_dialog_kb(game_id: int) -> InlineKeyboardMarkup:
         text=buttons["abort_game_button_yes"],
         callback_data=AbortDialogCbData(game_id=game_id).pack(),
     )
-    builder.button(text=buttons["cancel_button"], callback_data=CancelCbData().pack())
     return builder.as_markup()
 
 
@@ -95,8 +92,7 @@ def users_multiselect_kb(
         text=buttons["futher_button"],
         callback_data=MultiselectFurtherCbData(mode=mode, game_id=game_id).pack(),
     )
-    builder.button(text=buttons["cancel_button"], callback_data=CancelCbData().pack())
-    builder.adjust(*([2] * (len(players) // 2)) + [1, 1])
+    builder.adjust(*([2] * (len(players) // 2)) + [1])
     return builder.as_markup()
 
 
@@ -111,10 +107,6 @@ def game_menu_kb(status: GameStatus | None) -> InlineKeyboardMarkup:
             builder.button(
                 text=buttons["menu_add_funds"],
                 callback_data=GameMenuCbData(action=GameAction.ADD_FUNDS).pack(),
-            )
-            builder.button(
-                text=buttons["menu_add_photo"],
-                callback_data=GameMenuCbData(action=GameAction.ADD_PHOTO).pack(),
             )
             builder.button(
                 text=buttons["menu_finish_game"],
@@ -268,4 +260,15 @@ def debt_stats_kb(has_debts_i_owe: bool, has_debts_owe_me: bool) -> InlineKeyboa
             callback_data=DebtStatsCbData(view=DebtStatsView.OWE_ME).pack(),
         )
     builder.adjust(2)
+    return builder.as_markup()
+
+
+def skip_photo_kb(game_id: int) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text=buttons["skip_photo"],
+        callback_data=FinishGameCbData(
+            action=FinalGameAction.SKIP_PHOTO_AND_FINALIZE, game_id=game_id
+        ).pack(),
+    )
     return builder.as_markup()

@@ -136,7 +136,7 @@ async def update_net_profit_and_roi(game_id: int, db_session: AsyncSession):
 async def get_mvp(game_id: int, db_session: AsyncSession):
     query = (
         select(Record.user_id)
-        .filter(Record.game_id == game_id)
+        .filter(Record.game_id == game_id, Record.ROI.isnot(None))
         .order_by(Record.ROI.desc())
         .limit(1)
     )

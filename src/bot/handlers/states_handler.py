@@ -28,6 +28,9 @@ async def enter_buy_out(
     except ValueError:
         await message.answer(text=texts["incorrect_buyout_value"])
         return
+    if value < 0:
+        await message.answer(text=texts["incorrect_buyout_value"])
+        return
     player = await get_user_from_db_by_tg_id(player_id, db_session)
     await update_record(
         game_id=game_id,
