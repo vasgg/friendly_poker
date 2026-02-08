@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from aiogram import Bot
-from aiogram.errors import TelegramBadRequest
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import Message
 
 from bot.config import settings
