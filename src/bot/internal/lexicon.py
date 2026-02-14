@@ -110,7 +110,7 @@ buttons = {
     'menu_statistics': 'Statistics',
     'menu_select_ratio': 'Choose ratio',
     'menu_select_yearly_stats': 'Yearly stats next game',
-    'futher_button': 'Further',
+    'further_button': 'Further',
     'multi_selector': 'Add 1000',
     'single_selector': 'Custom',
     'abort_game_button': 'Abort game',

@@ -1,3 +1,4 @@
+from aiogram.enums import ButtonStyle
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
@@ -65,6 +66,7 @@ def confirmation_dialog_kb(game_id: int) -> InlineKeyboardMarkup:
     builder.button(
         text=buttons["abort_game_button_yes"],
         callback_data=AbortDialogCbData(game_id=game_id).pack(),
+        style=ButtonStyle.DANGER,
     )
     return builder.as_markup()
 
@@ -89,8 +91,9 @@ def users_multiselect_kb(
             ).pack(),
         )
     builder.button(
-        text=buttons["futher_button"],
+        text=buttons["further_button"],
         callback_data=MultiselectFurtherCbData(mode=mode, game_id=game_id).pack(),
+        style=ButtonStyle.SUCCESS,
     )
     builder.adjust(*([2] * (len(players) // 2)) + [1])
     return builder.as_markup()
@@ -107,19 +110,23 @@ def game_menu_kb(status: GameStatus | None) -> InlineKeyboardMarkup:
             builder.button(
                 text=buttons["menu_add_funds"],
                 callback_data=GameMenuCbData(action=GameAction.ADD_FUNDS).pack(),
+                style=ButtonStyle.SUCCESS,
             )
             builder.button(
                 text=buttons["menu_finish_game"],
                 callback_data=GameMenuCbData(action=GameAction.FINISH_GAME).pack(),
+                style=ButtonStyle.PRIMARY,
             )
             builder.button(
                 text=buttons["menu_abort_game"],
                 callback_data=GameMenuCbData(action=GameAction.ABORT_GAME).pack(),
+                style=ButtonStyle.DANGER,
             )
         case _:
             builder.button(
                 text=buttons["menu_start_game"],
                 callback_data=GameMenuCbData(action=GameAction.START_GAME).pack(),
+                style=ButtonStyle.PRIMARY,
             )
             builder.button(
                 text=buttons["menu_statistics"],
@@ -168,6 +175,7 @@ def finish_game_kb(game_id: int) -> InlineKeyboardMarkup:
         callback_data=FinishGameCbData(
             action=FinalGameAction.FINALIZE_GAME, game_id=game_id
         ).pack(),
+        style=ButtonStyle.PRIMARY,
     )
     builder.adjust(1)
     return builder.as_markup()
@@ -184,6 +192,7 @@ async def get_paid_button(debt_id, chat_id):
                         debt_id=debt_id,
                         chat_id=chat_id,
                     ).pack(),
+                    style=ButtonStyle.SUCCESS,
                 )
             ],
         ]
@@ -201,6 +210,7 @@ async def get_paid_button_confirmation(debt_id, chat_id):
                         debt_id=debt_id,
                         chat_id=chat_id,
                     ).pack(),
+                    style=ButtonStyle.SUCCESS,
                 )
             ],
             # [
@@ -227,6 +237,7 @@ def debt_details_i_owe_kb(debts, user_id: int) -> InlineKeyboardMarkup:
                 debt_id=debt.id,
                 chat_id=user_id,
             ).pack(),
+            style=ButtonStyle.DANGER,
         )
     builder.adjust(1)
     return builder.as_markup()
@@ -242,6 +253,7 @@ def debt_details_owe_me_kb(debts, user_id: int) -> InlineKeyboardMarkup:
                 debt_id=debt.id,
                 chat_id=user_id,
             ).pack(),
+            style=ButtonStyle.PRIMARY,
         )
     builder.adjust(1)
     return builder.as_markup()
@@ -253,11 +265,13 @@ def debt_stats_kb(has_debts_i_owe: bool, has_debts_owe_me: bool) -> InlineKeyboa
         builder.button(
             text=buttons["debt_stats_i_owe"],
             callback_data=DebtStatsCbData(view=DebtStatsView.I_OWE).pack(),
+            style=ButtonStyle.DANGER,
         )
     if has_debts_owe_me:
         builder.button(
             text=buttons["debt_stats_owe_me"],
             callback_data=DebtStatsCbData(view=DebtStatsView.OWE_ME).pack(),
+            style=ButtonStyle.SUCCESS,
         )
     builder.adjust(2)
     return builder.as_markup()
@@ -270,5 +284,6 @@ def skip_photo_kb(game_id: int) -> InlineKeyboardMarkup:
         callback_data=FinishGameCbData(
             action=FinalGameAction.SKIP_PHOTO_AND_FINALIZE, game_id=game_id
         ).pack(),
+        style=ButtonStyle.DANGER,
     )
     return builder.as_markup()
