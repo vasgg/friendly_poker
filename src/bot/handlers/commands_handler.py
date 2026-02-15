@@ -4,6 +4,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from bot.config import Settings
 from bot.controllers.debt import (
     calculate_debt_amount,
     get_unpaid_debts_as_creditor,
@@ -18,39 +19,42 @@ from bot.controllers.game import (
     get_player_total_buy_out,
 )
 from bot.controllers.record import get_record
-from bot.internal.lexicon import ORDER, SETTINGS_QUESTIONS, texts
-from bot.internal.context import GameStatus, SettingsForm
+from bot.internal.admin_menu import build_admin_menu
+from bot.internal.context import SettingsForm
 from bot.internal.keyboards import debt_stats_kb, game_menu_kb
-
+from bot.internal.lexicon import ORDER, SETTINGS_QUESTIONS, texts
 from database.models import User
-
 
 router = Router()
 
 
-@router.message(CommandStart())
+@router.message(CommandStart(), F.chat.type == "private")
 async def command_handler(
     message: Message,
     user: User,
 ) -> None:
     await message.answer(
-        text=f"hey, {user.fullname}",
+        text=texts["start_greeting"].format(user.fullname),
     )
 
 
-@router.message(Command("admin"))
-async def admin_command(message: Message, user: User, db_session: AsyncSession, state: FSMContext, settings) -> None:
+@router.message(Command("admin"), F.chat.type == "private")
+async def admin_command(
+    message: Message,
+    user: User,
+    db_session: AsyncSession,
+    state: FSMContext,
+) -> None:
     if not user.is_admin:
         await message.answer(text=texts["insufficient_privileges"])
         return
-    game = await get_active_game(db_session)
-    status = GameStatus.ACTIVE if game else None
+    text, status = await build_admin_menu(db_session)
     await message.answer(
-        text=texts["admin_menu"], reply_markup=game_menu_kb(status=status)
+        text=text, reply_markup=game_menu_kb(status=status, is_admin=user.is_admin)
     )
 
 
-@router.message(Command("settings"))
+@router.message(Command("settings"), F.chat.type == "private")
 async def settings_start(
     message: Message,
     state: FSMContext,
@@ -64,6 +68,11 @@ async def settings_start(
     await state.set_state(getattr(SettingsForm, first_field))
     question = SETTINGS_QUESTIONS[first_field]
     await message.answer(question)
+
+
+@router.message(Command("info"), F.chat.type == "private")
+async def info_command(message: Message, settings: Settings) -> None:
+    await message.answer(text=texts["info_message"].format(settings.bot.ADMIN_IBAN, settings.bot.ADMIN_NAME))
 
 
 @router.message(Command("stats"), F.chat.type == "private")

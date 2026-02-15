@@ -1,13 +1,13 @@
-from asyncio import create_task, sleep
-from datetime import datetime, timedelta, time
+import json
 import logging
+from asyncio import create_task, sleep
+from datetime import datetime, time, timedelta
+from pathlib import Path
 from zoneinfo import ZoneInfo
-from aiogram import Bot
+
 import aiofiles
 import aiofiles.os
-import json
-from pathlib import Path
-from typing import Optional
+from aiogram import Bot
 
 logger = logging.getLogger(__name__)
 TZ = ZoneInfo("Asia/Tbilisi")
@@ -15,10 +15,10 @@ TZ = ZoneInfo("Asia/Tbilisi")
 _PINS_FILE = Path(__file__).resolve().parent / "poll_pins.json"
 
 
-async def _load_last_pinned_poll_id(group_id: int) -> Optional[int]:
+async def _load_last_pinned_poll_id(group_id: int) -> int | None:
     try:
         if await aiofiles.os.path.exists(_PINS_FILE):
-            async with aiofiles.open(_PINS_FILE, mode="r", encoding="utf-8") as f:
+            async with aiofiles.open(_PINS_FILE, encoding="utf-8") as f:
                 content = await f.read()
                 data = json.loads(content)
                 val = data.get(str(group_id))
@@ -33,7 +33,7 @@ async def _save_last_pinned_poll_id(group_id: int, message_id: int | None) -> No
         data = {}
         if await aiofiles.os.path.exists(_PINS_FILE):
             try:
-                async with aiofiles.open(_PINS_FILE, mode="r", encoding="utf-8") as f:
+                async with aiofiles.open(_PINS_FILE, encoding="utf-8") as f:
                     content = await f.read()
                     data = json.loads(content)
             except Exception:

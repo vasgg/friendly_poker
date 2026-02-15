@@ -9,6 +9,8 @@ from bot.internal.config_dicts import assign_config_dict
 class BotConfig(BaseSettings):
     TOKEN: SecretStr
     ADMIN: int
+    ADMIN_IBAN: str
+    ADMIN_NAME: str
     GROUP_ID: int
     TIMEZONE: ZoneInfo = ZoneInfo("Asia/Tbilisi")
 

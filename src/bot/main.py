@@ -1,27 +1,26 @@
-from asyncio import run
 import logging
+from asyncio import run
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage, SimpleEventIsolation
 
+from bot.config import settings
+from bot.handlers.callbacks_handlers import router as callbacks_router
+from bot.handlers.commands_handler import router as command_router
+from bot.handlers.debt_handlers import router as debts_router
+from bot.handlers.errors_handler import router as errors_router
+from bot.handlers.photo_handler import router as photo_router
+from bot.handlers.states_handler import router as states_router
+from bot.internal.commands import set_bot_commands
+from bot.internal.config_dicts import initial_setup
+from bot.internal.notify_admin import on_shutdown, on_startup
 from bot.internal.poll import start_weekly_poll_loop
 from bot.middlewares.auth_middleware import AuthMiddleware
 from bot.middlewares.logging_middleware import LoggingMiddleware
-from bot.internal.commands import set_bot_commands
-from bot.internal.notify_admin import on_shutdown, on_startup
 from bot.middlewares.session_middleware import DBSessionMiddleware
 from bot.middlewares.updates_dumper_middleware import UpdatesDumperMiddleware
-from bot.handlers.commands_handler import router as command_router
-from bot.handlers.states_handler import router as states_router
-from bot.handlers.debt_handlers import router as debts_router
-from bot.handlers.callbacks_handlers import router as callbacks_router
-from bot.handlers.errors_handler import router as errors_router
-from bot.handlers.photo_handler import router as photo_router
-from bot.internal.config_dicts import initial_setup
-
-from bot.config import settings
 from database.database_connector import get_db
 
 

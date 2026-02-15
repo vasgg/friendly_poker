@@ -1,5 +1,6 @@
-from sqlalchemy.ext.asyncio import AsyncEngine
 import asyncio
+
+from sqlalchemy.ext.asyncio import AsyncEngine
 
 from database.database_connector import get_db
 from database.models import Base

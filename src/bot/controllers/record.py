@@ -10,16 +10,24 @@ from bot.internal.context import Amount, RecordUpdateMode
 from bot.internal.schemas import GameBalanceData
 from database.models import Debt, Record
 
-
 logger = logging.getLogger(__name__)
 
 
-async def create_record(game_id: int, user_id: int, db_session: AsyncSession) -> Record:
+async def create_record(
+    game_id: int,
+    user_id: int,
+    db_session: AsyncSession,
+    flush: bool = True,
+) -> Record:
     new_record = Record(game_id=game_id, user_id=user_id)
     db_session.add(new_record)
-    await db_session.flush()
+    if flush:
+        await db_session.flush()
     logger.info(
-        f"New record added to game {game_id}: {new_record.id=}, {new_record.user_id=}"
+        "New record added to game %s: id=%s user_id=%s",
+        game_id,
+        new_record.id,
+        new_record.user_id,
     )
     return new_record
 
@@ -55,12 +63,13 @@ async def update_record(
 
 
 async def increase_player_buy_in(
-    user_id: int, game_id: int, amount: Amount, db_session: AsyncSession
+    user_id: int, game_id: int, amount: Amount | int, db_session: AsyncSession
 ) -> None:
+    value = amount.value if isinstance(amount, Amount) else amount
     query = (
         update(Record)
         .where(Record.user_id == user_id, Record.game_id == game_id)
-        .values(buy_in=(coalesce(Record.buy_in, 0) + amount.value))
+        .values(buy_in=(coalesce(Record.buy_in, 0) + value))
     )
     await db_session.execute(query)
 
@@ -123,9 +132,10 @@ async def update_net_profit_and_roi(game_id: int, db_session: AsyncSession):
 
     for record in records:
         if record.buy_in is not None and record.buy_out is not None:
-            record.net_profit = record.buy_out - record.buy_in
+            net_profit = record.buy_out - record.buy_in
+            record.net_profit = net_profit
             if record.buy_in > 0:
-                roi = (record.net_profit / record.buy_in) * 100
+                roi = (net_profit / record.buy_in) * 100
                 record.ROI = round(roi, 2)
             else:
                 record.ROI = None

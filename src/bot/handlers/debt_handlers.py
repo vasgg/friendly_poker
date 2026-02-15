@@ -1,6 +1,6 @@
+import logging
 from contextlib import suppress
 from datetime import UTC, datetime
-import logging
 
 from aiogram import Router
 from aiogram.exceptions import TelegramBadRequest
@@ -16,15 +16,15 @@ from bot.controllers.debt import (
 )
 from bot.controllers.game import get_game_by_id
 from bot.controllers.user import get_user_from_db_by_tg_id
-from bot.internal.notify_admin import send_message_to_player
 from bot.internal.callbacks import DebtActionCbData, DebtStatsCbData
-from bot.internal.lexicon import texts
 from bot.internal.context import DebtAction, DebtStatsView
 from bot.internal.keyboards import (
     debt_details_i_owe_kb,
     debt_details_owe_me_kb,
     get_paid_button_confirmation,
 )
+from bot.internal.lexicon import texts
+from bot.internal.notify_admin import send_message_to_player
 from bot.services.debt_notification import send_debtor_notification
 from database.models import User
 
@@ -66,8 +66,8 @@ async def debt_handler(
     if game is None:
         logger.warning("Game not found: game_id=%s", debt.game_id)
         return
-    creditor: User = await get_user_from_db_by_tg_id(debt.creditor_id, db_session)
-    debtor: User = await get_user_from_db_by_tg_id(debt.debtor_id, db_session)
+    creditor = await get_user_from_db_by_tg_id(debt.creditor_id, db_session)
+    debtor = await get_user_from_db_by_tg_id(debt.debtor_id, db_session)
     if creditor is None or debtor is None:
         logger.warning("Creditor or debtor not found for debt_id=%s", callback_data.debt_id)
         return

@@ -1,15 +1,14 @@
-from dataclasses import dataclass
-from datetime import UTC, datetime
 import html
 import logging
+from dataclasses import dataclass
+from datetime import UTC, datetime
 
-from sqlalchemy import select, update, func, extract
+from sqlalchemy import extract, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
-from bot.config import settings
-from bot.internal.lexicon import texts
 from bot.internal.context import GameStatus
+from bot.internal.lexicon import texts
 from database.models import Game, Record, User
 
 logger = logging.getLogger(__name__)
@@ -47,6 +46,8 @@ async def get_active_game(db_session: AsyncSession) -> Game | None:
         select(Game)
         .where(Game.status == GameStatus.ACTIVE)
         .options(joinedload(Game.records))
+        .order_by(Game.id.desc())
+        .limit(2)
     )
     result = await db_session.execute(query)
     games = result.unique().scalars().all()
@@ -55,7 +56,6 @@ async def get_active_game(db_session: AsyncSession) -> Game | None:
 
     if len(games) > 1:
         logger.error(f"Found {len(games)} active games! Returning the most recent one.")
-        games = sorted(games, key=lambda g: g.id, reverse=True)
 
     game = games[0]
     if game:
@@ -139,10 +139,15 @@ def format_duration_with_days(seconds: int) -> str:
     return " ".join(parts)
 
 
-async def get_yearly_stats(
-    year: int, db_session: AsyncSession
+async def _get_stats(
+    year: int | None, db_session: AsyncSession
 ) -> tuple[YearlySummary, list[YearlyPlayerStats]]:
-    summary_query = (
+    def with_year_filter(query):
+        if year is None:
+            return query
+        return query.where(extract("year", Game.created_at) == year)
+
+    summary_query = with_year_filter(
         select(
             func.count(func.distinct(Game.id)).label("games_count"),
             func.count(func.distinct(Record.user_id)).label("players_count"),
@@ -150,23 +155,21 @@ async def get_yearly_stats(
         )
         .join(Record, Record.game_id == Game.id)
         .where(Game.status == GameStatus.FINISHED)
-        .where(extract("year", Game.created_at) == year)
     )
     summary_result = await db_session.execute(summary_query)
     total_games, total_players, total_buy_in = summary_result.one()
 
-    duration_query = (
-        select(func.coalesce(func.sum(Game.duration), 0))
-        .where(Game.status == GameStatus.FINISHED)
-        .where(extract("year", Game.created_at) == year)
+    duration_query = with_year_filter(
+        select(func.coalesce(func.sum(Game.duration), 0)).where(
+            Game.status == GameStatus.FINISHED
+        )
     )
     duration_result = await db_session.execute(duration_query)
     (total_duration_seconds,) = duration_result.one()
 
-    biggest_pot_query = (
+    biggest_pot_query = with_year_filter(
         select(Game.total_pot, Game.id)
         .where(Game.status == GameStatus.FINISHED)
-        .where(extract("year", Game.created_at) == year)
         .order_by(Game.total_pot.desc(), Game.id.asc())
         .limit(1)
     )
@@ -177,7 +180,7 @@ async def get_yearly_stats(
     else:
         biggest_pot, biggest_pot_game_id = 0, None
 
-    players_query = (
+    players_query = with_year_filter(
         select(
             User.id,
             User.fullname,
@@ -188,7 +191,6 @@ async def get_yearly_stats(
         .join(Record, Record.user_id == User.id)
         .join(Game, Game.id == Record.game_id)
         .where(Game.status == GameStatus.FINISHED)
-        .where(extract("year", Game.created_at) == year)
         .group_by(User.id, User.fullname)
         .order_by(User.fullname)
     )
@@ -210,14 +212,13 @@ async def get_yearly_stats(
             )
         )
 
-    host_query = (
+    host_query = with_year_filter(
         select(
             User.fullname,
             func.count(Game.id).label("games_hosted"),
         )
         .join(Game, Game.host_id == User.id)
         .where(Game.status == GameStatus.FINISHED)
-        .where(extract("year", Game.created_at) == year)
         .group_by(User.id, User.fullname)
         .order_by(func.count(Game.id).desc())
     )
@@ -229,23 +230,21 @@ async def get_yearly_stats(
     else:
         top_host_names, top_host_games = [], 0
 
-    single_roi_query = (
+    single_roi_query = with_year_filter(
         select(func.max(Record.ROI))
         .join(Game, Game.id == Record.game_id)
         .where(Game.status == GameStatus.FINISHED)
         .where(Record.ROI.isnot(None))
-        .where(extract("year", Game.created_at) == year)
     )
     single_roi_result = await db_session.execute(single_roi_query)
     (best_single_game_roi,) = single_roi_result.one()
     if best_single_game_roi is not None:
-        single_roi_names_query = (
+        single_roi_names_query = with_year_filter(
             select(func.distinct(User.fullname))
             .join(Record, Record.user_id == User.id)
             .join(Game, Game.id == Record.game_id)
             .where(Game.status == GameStatus.FINISHED)
             .where(Record.ROI == best_single_game_roi)
-            .where(extract("year", Game.created_at) == year)
         )
         single_roi_names_result = await db_session.execute(single_roi_names_query)
         best_single_game_roi_names = sorted(
@@ -254,7 +253,7 @@ async def get_yearly_stats(
     else:
         best_single_game_roi_names = []
 
-    mvp_query = (
+    mvp_query = with_year_filter(
         select(
             User.fullname,
             func.count(Game.id).label("mvp_count"),
@@ -262,7 +261,6 @@ async def get_yearly_stats(
         .join(Game, Game.mvp_id == User.id)
         .where(Game.status == GameStatus.FINISHED)
         .where(Game.mvp_id.isnot(None))
-        .where(extract("year", Game.created_at) == year)
         .group_by(User.id, User.fullname)
         .order_by(func.count(Game.id).desc())
     )
@@ -292,11 +290,23 @@ async def get_yearly_stats(
     return summary, players_stats
 
 
-def generate_yearly_stats_report(
-    year: int, summary: YearlySummary, players: list[YearlyPlayerStats]
+async def get_yearly_stats(
+    year: int, db_session: AsyncSession
+) -> tuple[YearlySummary, list[YearlyPlayerStats]]:
+    return await _get_stats(year, db_session)
+
+
+async def get_all_time_stats(
+    db_session: AsyncSession,
+) -> tuple[YearlySummary, list[YearlyPlayerStats]]:
+    return await _get_stats(None, db_session)
+
+
+def _generate_stats_report(
+    title: str, summary: YearlySummary, players: list[YearlyPlayerStats]
 ) -> str:
     lines = [
-        f"<b>Year {year} summary</b>",
+        f"<b>{title}</b>",
         f"Total games: <b>{summary.total_games}</b>",
         f"Total players: <b>{summary.total_players}</b>",
         f"Biggest pot: <b>{summary.biggest_pot}</b> (game {summary.biggest_pot_game_id})",
@@ -383,12 +393,24 @@ def generate_yearly_stats_report(
     return "\n".join(lines)
 
 
+def generate_yearly_stats_report(
+    year: int, summary: YearlySummary, players: list[YearlyPlayerStats]
+) -> str:
+    return _generate_stats_report(f"Year {year} summary", summary, players)
+
+
+def generate_all_time_stats_report(
+    summary: YearlySummary, players: list[YearlyPlayerStats]
+) -> str:
+    return _generate_stats_report("All-time summary", summary, players)
+
+
 async def get_group_game_report(
     game_id: int, name: str, roi: float, db_session: AsyncSession
 ) -> str:
     game = await get_game_by_id(game_id, db_session)
     if game is None:
-        return f"Game {game_id} not found"
+        return texts["game_not_found"].format(game_id)
     duration = format_duration(game.duration or 0)
     text = texts["global_game_report"].format(
         game_id,

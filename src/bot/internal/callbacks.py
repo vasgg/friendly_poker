@@ -63,3 +63,32 @@ class GameModeCbData(CallbackData, prefix="game_mode"):
 
 class DebtStatsCbData(CallbackData, prefix="debt_stats"):
     view: DebtStatsView
+
+
+class CustomFundsConfirmCbData(CallbackData, prefix="custom_funds"):
+    confirm: bool
+
+
+class DeletePlayerSelectCbData(CallbackData, prefix="del_player"):
+    user_id: int
+    page: int
+
+
+class DeletePlayerPageCbData(CallbackData, prefix="del_player_page"):
+    page: int
+
+
+class DeletePlayerProceedCbData(CallbackData, prefix="del_player_proceed"):
+    user_id: int
+    page: int
+    force: bool
+
+
+class DeletePlayerConfirmCbData(CallbackData, prefix="del_player_confirm"):
+    user_id: int
+    page: int
+    force: bool
+
+
+class DeletePlayerCancelCbData(CallbackData, prefix="del_player_cancel"):
+    page: int

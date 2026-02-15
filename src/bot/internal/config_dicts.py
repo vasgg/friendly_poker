@@ -1,7 +1,7 @@
-from datetime import datetime
-from logging import Formatter
 import logging.config
 import sys
+from datetime import datetime
+from logging import Formatter
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 

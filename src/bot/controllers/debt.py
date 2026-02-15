@@ -1,6 +1,6 @@
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
 
-from sqlalchemy import select, update
+from sqlalchemy import or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -35,7 +35,7 @@ def equalizer(balance_map: dict[int, int], game_id: int) -> list[DebtData]:
         return []
 
     pairs.sort(key=lambda x: x[1])
-    users, balances = zip(*pairs)
+    users, balances = zip(*pairs, strict=True)
     balances = list(balances)
 
     min_result: list[DebtData] = []
@@ -94,7 +94,7 @@ async def get_unpaid_debts_as_debtor(
         select(Debt)
         .filter(
             Debt.debtor_id == user_id,
-            (Debt.is_paid == False) | (Debt.paid_at.is_(None)),
+            or_(Debt.is_paid.is_(False), Debt.paid_at.is_(None)),
         )
         .options(selectinload(Debt.creditor), selectinload(Debt.game))
     )
@@ -110,7 +110,7 @@ async def get_unpaid_debts_as_creditor(
         select(Debt)
         .filter(
             Debt.creditor_id == user_id,
-            (Debt.is_paid == False) | (Debt.paid_at.is_(None)),
+            or_(Debt.is_paid.is_(False), Debt.paid_at.is_(None)),
         )
         .options(selectinload(Debt.debtor), selectinload(Debt.game))
     )

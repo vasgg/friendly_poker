@@ -8,8 +8,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.config import settings
 from bot.controllers.debt import flush_debts_to_db
-from bot.services.photo_reminder import cancel_photo_reminder
-from bot.services.debt_notification import notify_all_debts
 from bot.controllers.game import (
     commit_game_results_to_db,
     generate_yearly_stats_report,
@@ -28,6 +26,8 @@ from bot.controllers.user import get_user_from_db_by_tg_id
 from bot.internal.lexicon import texts
 from bot.internal.poll import unpin_current_poll
 from bot.internal.schemas import GameBalanceData
+from bot.services.debt_notification import notify_all_debts
+from bot.services.photo_reminder import cancel_photo_reminder
 
 logger = logging.getLogger(__name__)
 
@@ -159,23 +159,41 @@ async def finalize_game(
     if mvp_id is None:
         return FinalizationResult(
             success=False,
-            error_message="Could not determine MVP for the game.",
+            error_message=texts["mvp_not_found"],
         )
 
     # Step 4: Commit game results to DB
+    assert results.total_pot is not None
     await commit_game_results_to_db(game_id, results.total_pot, mvp_id, db_session)
+    await db_session.commit()
 
     # Step 5: Send debt notifications
-    await notify_all_debts(game_id, bot, db_session)
+    try:
+        await notify_all_debts(game_id, bot, db_session)
+    except Exception:
+        logger.exception("Game %s: debt notifications failed", game_id)
+    finally:
+        await db_session.commit()
 
     # Step 6: Send group report
-    await send_game_report_to_group(bot, game_id, mvp_fullname, mvp_roi, db_session)
+    try:
+        assert mvp_fullname is not None
+        assert mvp_roi is not None
+        await send_game_report_to_group(bot, game_id, mvp_fullname, mvp_roi, db_session)
+    except Exception:
+        logger.exception("Game %s: failed to send group report", game_id)
 
     # Step 7: Send yearly stats if enabled
-    await send_yearly_stats_if_enabled(bot, game_id, state, db_session)
+    try:
+        await send_yearly_stats_if_enabled(bot, game_id, state, db_session)
+    except Exception:
+        logger.exception("Game %s: failed to send yearly stats", game_id)
 
     # Step 8: Unpin the weekly poll
-    await unpin_current_poll(bot, settings.bot.GROUP_ID)
+    try:
+        await unpin_current_poll(bot, settings.bot.GROUP_ID)
+    except Exception:
+        logger.exception("Game %s: failed to unpin poll", game_id)
 
     logger.info("Game %s finalized successfully", game_id)
     return FinalizationResult(success=True)

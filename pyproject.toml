@@ -21,11 +21,30 @@ package = true
 dev = [
     "pytest>=8.3.5",
     "pytest-asyncio>=0.24.0",
+    "ruff>=0.6.0",
+    "ty>=0.0.0",
 ]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+known-first-party = ["bot", "database"]
+
+[tool.ty.rules]
+missing-argument = "ignore"
+unresolved-attribute = "ignore"
+invalid-argument-type = "ignore"
 
 [project.scripts]
 bot-run = "bot.main:run_main"

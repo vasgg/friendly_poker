@@ -135,22 +135,32 @@ async def notify_all_debts(
         debtor_username = format_username(debtor)
         amount = calculate_debt_amount(debt.amount, game.ratio)
 
-        await send_debtor_notification(
-            bot=bot,
-            debt=debt,
-            debtor=debtor,
-            amount=amount,
-            creditor_username=creditor_username,
-            creditor=creditor,
-            db_session=db_session,
-        )
+        try:
+            await send_debtor_notification(
+                bot=bot,
+                debt=debt,
+                debtor=debtor,
+                amount=amount,
+                creditor_username=creditor_username,
+                creditor=creditor,
+                db_session=db_session,
+            )
+        except Exception:
+            logger.exception(
+                "Failed to notify debtor %s for debt %s", debtor.id, debt.id
+            )
 
-        await send_creditor_notification(
-            bot=bot,
-            debt=debt,
-            creditor=creditor,
-            amount=amount,
-            debtor_username=debtor_username,
-        )
+        try:
+            await send_creditor_notification(
+                bot=bot,
+                debt=debt,
+                creditor=creditor,
+                amount=amount,
+                debtor_username=debtor_username,
+            )
+        except Exception:
+            logger.exception(
+                "Failed to notify creditor %s for debt %s", creditor.id, debt.id
+            )
 
     logger.info("All debt notifications sent for game %s", game_id)

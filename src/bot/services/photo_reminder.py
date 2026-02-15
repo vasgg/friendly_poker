@@ -140,6 +140,8 @@ async def save_game_photo(bot: Bot, message: Message, info: ReminderInfo) -> str
         logger.info("Removed previous photo: %s", old_file)
 
     file = await bot.get_file(file_id)
+    if file.file_path is None:
+        raise ValueError("File path is missing for downloaded photo")
     await bot.download_file(file.file_path, destination=filepath)
     logger.info("Photo saved: %s", filepath)
     return str(filepath)

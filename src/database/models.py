@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import BigInteger, ForeignKey, Index, String, Integer
+from sqlalchemy import BigInteger, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from bot.internal.context import GameStatus

@@ -1,11 +1,11 @@
 import logging
 
+from aiogram.types import User as AiogramUser
 from sqlalchemy import Result, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.internal.lexicon import ORDER, SETTINGS_QUESTIONS
 from database.models import Record, User
-from aiogram.types import User as AiogramUser
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +33,17 @@ async def get_user_from_db_by_tg_id(
 
 async def get_all_users(db_session: AsyncSession) -> list[User]:
     query = select(User)
+    result: Result = await db_session.execute(query)
+    return list(result.unique().scalars().all())
+
+
+async def get_non_admin_users(
+    db_session: AsyncSession, exclude_ids: set[int] | None = None
+) -> list[User]:
+    query = select(User).where(User.is_admin.is_(False))
+    if exclude_ids:
+        query = query.where(~User.id.in_(exclude_ids))
+    query = query.order_by(User.fullname)
     result: Result = await db_session.execute(query)
     return list(result.unique().scalars().all())
 

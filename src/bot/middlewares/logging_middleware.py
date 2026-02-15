@@ -1,6 +1,7 @@
 import functools
 import logging
-from typing import Any, Awaitable, Callable
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 from aiogram import BaseMiddleware
 from aiogram.types import TelegramObject
@@ -15,14 +16,22 @@ class LoggingMiddleware(BaseMiddleware):
     ) -> Any:
         try:
             name = self._get_name(handler)
-            logging.info(f"calling {name}")
-        finally:
-            res = await handler(event, data)
-        return res
+        except Exception:
+            logging.exception("Failed to resolve handler name")
+            name = repr(handler)
+        logging.info("calling %s", name)
+        return await handler(event, data)
 
     def _get_name(self, handler):
         while isinstance(handler, functools.partial):
+            if not handler.args:
+                break
             handler = handler.args[0]
 
-        name = handler.__wrapped__.__self__.callback.__name__
-        return name
+        wrapped = getattr(handler, "__wrapped__", None)
+        if wrapped is not None:
+            owner = getattr(wrapped, "__self__", None)
+            callback = getattr(owner, "callback", None) if owner else None
+            if callback is not None:
+                return getattr(callback, "__name__", repr(callback))
+        return getattr(handler, "__name__", repr(handler))

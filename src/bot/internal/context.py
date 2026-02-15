@@ -1,4 +1,5 @@
 from enum import IntEnum, StrEnum, auto
+
 from aiogram.filters.state import State, StatesGroup
 
 
@@ -39,6 +40,8 @@ class GameAction(IntEnum):
     STATISTICS = auto()
     SELECT_RATIO = auto()
     SELECT_YEARLY_STATS = auto()
+    DELETE_PLAYER = auto()
+    NEXT_GAME_SETTINGS = auto()
 
 
 class RecordUpdateMode(IntEnum):
@@ -78,5 +81,6 @@ class DebtStatsView(IntEnum):
 
 class States(StatesGroup):
     ENTER_BUY_OUT = State()
+    ENTER_CUSTOM_FUNDS = State()
     ADD_ADMIN = State()
     DELETE_ADMIN = State()
