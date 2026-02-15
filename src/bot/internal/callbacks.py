@@ -61,6 +61,15 @@ class GameModeCbData(CallbackData, prefix="game_mode"):
     ratio: int
 
 
+class NextGameRatioConfirmCbData(CallbackData, prefix="next_ratio_confirm"):
+    ratio: int
+    confirm: bool
+
+
+class NextGameYearlyStatsConfirmCbData(CallbackData, prefix="next_yearly_confirm"):
+    confirm: bool
+
+
 class DebtStatsCbData(CallbackData, prefix="debt_stats"):
     view: DebtStatsView
 

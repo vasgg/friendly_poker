@@ -7,7 +7,7 @@ from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage, SimpleEventIsolation
 
 from bot.config import settings
-from bot.handlers.callbacks_handlers import router as callbacks_router
+from bot.handlers.callbacks import router as callbacks_router
 from bot.handlers.commands_handler import router as command_router
 from bot.handlers.debt_handlers import router as debts_router
 from bot.handlers.errors_handler import router as errors_router
@@ -38,7 +38,7 @@ async def main():
     )
     db = get_db()
 
-    async def dispose_db(*args, **kwargs):
+    async def dispose_db(*_: object, **__: object) -> None:
         await db.dispose()
         logging.info("Database connection pool disposed")
 

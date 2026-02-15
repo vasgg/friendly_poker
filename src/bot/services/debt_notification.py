@@ -1,3 +1,4 @@
+import html
 import logging
 from decimal import Decimal
 
@@ -15,7 +16,8 @@ logger = logging.getLogger(__name__)
 
 
 def format_username(user: User) -> str:
-    return f"@{user.username}" if user.username else user.fullname
+    label = f"@{user.username}" if user.username else user.fullname
+    return html.escape(label)
 
 
 def format_debtor_message(
@@ -28,14 +30,17 @@ def format_debtor_message(
     has_requisites = all((creditor.bank, creditor.IBAN, creditor.name_surname))
 
     if has_requisites:
+        bank = html.escape(creditor.bank or "")
+        iban = html.escape(creditor.IBAN or "")
+        name = html.escape(creditor.name_surname or "")
         return texts["debtor_personal_game_report_with_requisites"].format(
             debt.game_id,
             debt.id,
             amount,
             creditor_username,
-            creditor.bank,
-            creditor.IBAN,
-            creditor.name_surname,
+            bank,
+            iban,
+            name,
         )
     return texts["debtor_personal_game_report"].format(
         debt.game_id, debt.id, amount, creditor_username

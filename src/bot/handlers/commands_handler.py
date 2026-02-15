@@ -1,3 +1,5 @@
+import html
+
 from aiogram import F, Router
 from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
@@ -34,7 +36,7 @@ async def command_handler(
     user: User,
 ) -> None:
     await message.answer(
-        text=texts["start_greeting"].format(user.fullname),
+        text=texts["start_greeting"].format(html.escape(user.fullname)),
     )
 
 
@@ -43,7 +45,6 @@ async def admin_command(
     message: Message,
     user: User,
     db_session: AsyncSession,
-    state: FSMContext,
 ) -> None:
     if not user.is_admin:
         await message.answer(text=texts["insufficient_privileges"])
@@ -72,7 +73,12 @@ async def settings_start(
 
 @router.message(Command("info"), F.chat.type == "private")
 async def info_command(message: Message, settings: Settings) -> None:
-    await message.answer(text=texts["info_message"].format(settings.bot.ADMIN_IBAN, settings.bot.ADMIN_NAME))
+    await message.answer(
+        text=texts["info_message"].format(
+            html.escape(settings.bot.ADMIN_IBAN),
+            html.escape(settings.bot.ADMIN_NAME),
+        )
+    )
 
 
 @router.message(Command("stats"), F.chat.type == "private")
@@ -137,7 +143,7 @@ async def stats_command(message: Message, user: User, db_session: AsyncSession):
                 else:
                     creditor_totals[creditor_id] = (debt.creditor.fullname, amount)
             for name, total in creditor_totals.values():
-                debts_text += texts["stats_debt_aggregated"].format(name, total)
+                debts_text += texts["stats_debt_aggregated"].format(html.escape(name), total)
 
         if debts_as_creditor:
             debts_text += texts["stats_debts_owed_to_you"]
@@ -152,7 +158,7 @@ async def stats_command(message: Message, user: User, db_session: AsyncSession):
                 else:
                     debtor_totals[debtor_id] = (debt.debtor.fullname, amount)
             for name, total in debtor_totals.values():
-                debts_text += texts["stats_debt_aggregated"].format(name, total)
+                debts_text += texts["stats_debt_aggregated"].format(html.escape(name), total)
 
         stats_text += debts_text
         reply_markup = debt_stats_kb(

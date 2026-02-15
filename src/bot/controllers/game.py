@@ -244,7 +244,7 @@ async def _get_stats(
             .join(Record, Record.user_id == User.id)
             .join(Game, Game.id == Record.game_id)
             .where(Game.status == GameStatus.FINISHED)
-            .where(Record.ROI == best_single_game_roi)
+            .where(Record.ROI == best_single_game_roi)  # noqa: SIM300
         )
         single_roi_names_result = await db_session.execute(single_roi_names_query)
         best_single_game_roi_names = sorted(

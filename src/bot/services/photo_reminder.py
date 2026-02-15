@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -126,7 +127,8 @@ async def save_game_photo(bot: Bot, message: Message, info: ReminderInfo) -> str
 
     date_str = local_dt.strftime("%d_%m_%Y")
     year_str = str(local_dt.year)
-    host_safe = info.host_fullname.replace(" ", "_")
+    host_raw = info.host_fullname.strip().replace(" ", "_")
+    host_safe = re.sub(r"[^A-Za-z0-9_-]+", "_", host_raw).strip("._-")[:50] or "host"
     filename = f"game{info.game_id}_{date_str}_{host_safe}{ext}"
 
     photo_dir = Path("photos") / year_str

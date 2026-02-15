@@ -220,6 +220,9 @@ jspm_packages/
 *.orig
 *.save
 
+# Claude / AI tooling
+.claude/
+
 # JetBrains IDEs
 .idea/
 *.iml
@@ -251,6 +254,8 @@ share/
 
 # Bot runtime state
 src/bot/internal/poll_pins.json
+
+.ruff_cache/
 
 photos/
 __pycache__

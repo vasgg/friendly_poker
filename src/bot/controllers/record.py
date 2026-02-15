@@ -83,11 +83,7 @@ async def get_remained_players_in_game(game_id: int, db_session: AsyncSession) -
     result = await db_session.execute(query)
     records = result.unique().scalars().all()
     remaining_players = [record.user for record in records]
-    remaining_players_names = []
-    if remaining_players:
-        for player in remaining_players:
-            remaining_players_names.append(player.fullname)
-    return ", ".join(remaining_players_names)
+    return ", ".join(player.fullname for player in remaining_players)
 
 
 async def check_game_balance(game_id: int, db_session: AsyncSession) -> GameBalanceData:

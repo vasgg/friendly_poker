@@ -21,7 +21,7 @@ class AuthMiddleware(BaseMiddleware):
         db_session = data["db_session"]
         user = await get_user_from_db_by_tg_id(user_payload.id, db_session)
         if not user:
-            is_admin = True if user_payload.id == settings.bot.ADMIN else False
+            is_admin = user_payload.id == settings.bot.ADMIN
             user = await add_user_to_db(user_payload, db_session, is_admin)
         data["user"] = user
         return await handler(event, data)

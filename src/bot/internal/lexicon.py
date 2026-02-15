@@ -47,22 +47,26 @@ texts = {
     'admin_menu_hint': 'Select an action below.',
     'admin_next_game_menu': 'Extras.',
     'host_not_selected': 'Host not selected. Start again.',
-    'info_message': '<b>Bot info</b>\n\n'
+    'info_message': '<b>Bot info</b>\n'
+                    'Track friendly poker games: buy-ins, debts, and stats.\n'
+                    'Commands work in private chat.\n\n'
                     '<b>Commands</b>\n'
                     '/settings — payment requisites\n'
                     '/stats — stats\n'
-                    '/admin — admin panel\n'
+                    '/admin — admin panel\n\n'
                     '<b>Support</b>\n'
                     'Support the creator via card transfer:\n'
-                    '<b>Bank of Georgia</b> <code>{}</code>\n'
-                    '<b>Name:</b> <code>{}</code>',
+                    'Bank of Georgia <b><code>{}</code></b>\n'
+                    '<b><code>{}</code></b>',
     'insufficient_privileges': 'Not allowed. Admins only.',
     'choose_host': 'Select host.',
     'incorrect_buyout_value': 'Invalid BUY-OUT. Enter a number.',
     'game_already_active': 'Active game exists. Finish it first.',
     'no_active_game': 'No active game. Start one first.',
     'select_mode_prompt': 'Select ratio for the next game.',
+    'ratio_confirm': 'Set next game ratio to x{}?',
     'ratio_set': 'Next game ratio: x{}.',
+    'yearly_stats_confirm': 'Send yearly stats after next game?',
     'yearly_stats_set': 'Yearly stats will be sent after the next game.',
 
     'add_funds_selector': 'Select add-funds mode.',

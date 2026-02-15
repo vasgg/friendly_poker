@@ -1,3 +1,4 @@
+import html
 import logging
 from contextlib import suppress
 from datetime import UTC, datetime
@@ -25,7 +26,7 @@ from bot.internal.keyboards import (
 )
 from bot.internal.lexicon import texts
 from bot.internal.notify_admin import send_message_to_player
-from bot.services.debt_notification import send_debtor_notification
+from bot.services.debt_notification import format_username, send_debtor_notification
 from database.models import User
 
 logger = logging.getLogger(__name__)
@@ -71,10 +72,8 @@ async def debt_handler(
     if creditor is None or debtor is None:
         logger.warning("Creditor or debtor not found for debt_id=%s", callback_data.debt_id)
         return
-    debtor_username = "@" + debtor.username if debtor.username else debtor.fullname
-    creditor_username = (
-        "@" + creditor.username if creditor.username else creditor.fullname
-    )
+    debtor_username = format_username(debtor)
+    creditor_username = format_username(creditor)
     amount = calculate_debt_amount(debt.amount, game.ratio)
     match callback_data.action:
         case DebtAction.MARK_AS_PAID:
@@ -185,7 +184,7 @@ async def debt_stats_handler(
             creditor_name = debt.creditor.fullname
             game_date = debt.game.created_at.replace(tzinfo=UTC).astimezone(settings.bot.TIMEZONE).strftime("%d.%m.%Y")
             response += texts["stats_debt_line"].format(
-                debt.game_id, game_date, amount, creditor_name
+                debt.game_id, game_date, amount, html.escape(creditor_name)
             )
         keyboard = debt_details_i_owe_kb(debts, user.id)
     else:
@@ -199,7 +198,7 @@ async def debt_stats_handler(
             debtor_name = debt.debtor.fullname
             game_date = debt.game.created_at.replace(tzinfo=UTC).astimezone(settings.bot.TIMEZONE).strftime("%d.%m.%Y")
             response += texts["stats_debt_line"].format(
-                debt.game_id, game_date, amount, debtor_name
+                debt.game_id, game_date, amount, html.escape(debtor_name)
             )
         keyboard = debt_details_owe_me_kb(debts, user.id)
 

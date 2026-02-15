@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A Telegram bot for managing friendly poker sessions. Tracks games, players, statistics, debts, and generates reports. Built with Python 3.12+, aiogram 3.15+, SQLAlchemy 2.0+, and Pydantic 2.9+.
+A Telegram bot for managing friendly poker sessions. Tracks games, players, statistics, debts, and generates reports. Built with Python 3.12+, aiogram 3.25+, SQLAlchemy 2.0+, and Pydantic 2.9+.
 
 ## Commands
 
@@ -22,7 +22,11 @@ uv run bot-run
 uv run pytest
 
 # Run a specific test
-uv run pytest src/tests/test_debt.py -k "test_name"
+uv run pytest tests/test_debt.py -k "test_name"
+
+# Lint / typecheck
+uv run ruff check src
+uv run ty check src
 ```
 
 ## Environment Variables
@@ -30,8 +34,11 @@ uv run pytest src/tests/test_debt.py -k "test_name"
 Required in `.env` file (see `example.env`):
 - `BOT_TOKEN` - Telegram bot token
 - `BOT_ADMIN` - Admin user ID
+- `BOT_ADMIN_IBAN` - Card/IBAN shown in `/info`
+- `BOT_ADMIN_NAME` - Name shown in `/info`
 - `BOT_GROUP_ID` - Target group ID
 - `DB_FILE_NAME` - SQLite database filename
+- `BOT_TIMEZONE` - Optional (default: `Asia/Tbilisi`)
 
 ## Architecture
 
@@ -42,6 +49,7 @@ src/
 │   ├── config.py            # Pydantic config (BotConfig, DBConfig)
 │   ├── middlewares/         # Auth, session, logging middlewares
 │   ├── handlers/            # Message/callback routing (aiogram Router)
+│   │   └── callbacks/       # CallbackQuery handlers split by topic
 │   ├── controllers/         # Business logic (game, user, record, debt)
 │   └── internal/            # Shared utilities, enums, keyboards, lexicon
 └── database/
@@ -62,7 +70,7 @@ src/
 - **Models**: `User` (player stats), `Game` (session tracking), `Record` (buy-in/buy-out), `Debt` (settlements)
 - **Context enums** (`internal/context.py`): `GameStatus`, `GameAction`, `SettingsForm` FSM states
 - **Debt algorithm** (`controllers/debt.py`): DFS-based `equalizer()` function for minimal transaction calculation
-- **UI strings** (`internal/lexicon.py`): All text in Russian, centralized
+- **UI strings** (`internal/lexicon.py`): Centralized (English)
 
 ### Handler Pattern
 
@@ -74,5 +82,5 @@ async def handler(message: Message, user: User, db_session: AsyncSession, state:
 ### Database Patterns
 
 - All operations are async using `AsyncSession`
-- Session context manager with `.begin()` for transactions
+- DB session is created per update in `DBSessionMiddleware` and committed on success (rollback on exception)
 - Full type hints with `Mapped` generics

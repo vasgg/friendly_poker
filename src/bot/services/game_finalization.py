@@ -163,7 +163,14 @@ async def finalize_game(
         )
 
     # Step 4: Commit game results to DB
-    assert results.total_pot is not None
+    if results.total_pot is None:
+        logger.error(
+            "Game %s: total pot missing after successful balance validation", game_id
+        )
+        return FinalizationResult(
+            success=False,
+            error_message=texts["check_game_balance_error"],
+        )
     await commit_game_results_to_db(game_id, results.total_pot, mvp_id, db_session)
     await db_session.commit()
 
@@ -177,8 +184,8 @@ async def finalize_game(
 
     # Step 6: Send group report
     try:
-        assert mvp_fullname is not None
-        assert mvp_roi is not None
+        if mvp_fullname is None or mvp_roi is None:
+            raise ValueError("MVP details missing")
         await send_game_report_to_group(bot, game_id, mvp_fullname, mvp_roi, db_session)
     except Exception:
         logger.exception("Game %s: failed to send group report", game_id)

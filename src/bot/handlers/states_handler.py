@@ -1,3 +1,4 @@
+import html
 import logging
 
 from aiogram import F, Router
@@ -40,6 +41,7 @@ async def enter_buy_out(
         await message.answer(text=texts["incorrect_buyout_value"])
         return
     player = await get_user_from_db_by_tg_id(player_id, db_session)
+    player_name = html.escape(player.fullname) if player else "Unknown"
     await update_record(
         game_id=game_id,
         user_id=player_id,
@@ -49,7 +51,7 @@ async def enter_buy_out(
     )
     await state.set_state()
     await message.answer(
-        text=texts["buy_out_updated"].format(game_id, player.fullname, value)
+        text=texts["buy_out_updated"].format(game_id, player_name, value)
     )
 
 
@@ -137,7 +139,7 @@ async def enter_custom_funds(
         value,
     )
     await message.answer(
-        text=texts["custom_funds_confirm"].format(value, player.fullname),
+        text=texts["custom_funds_confirm"].format(value, html.escape(player.fullname)),
         reply_markup=custom_funds_confirm_kb(),
     )
 
