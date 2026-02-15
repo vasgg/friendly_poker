@@ -156,6 +156,7 @@ async def game_menu_handler(
             if not players:
                 await callback.message.answer(text=texts["admin_delete_player_no_players"])
                 return
+            players.sort(key=lambda player: (player.games_played, player.fullname.casefold()))
             page_players, total_pages, page = _paginate_players(players, 0)
             await _edit_or_answer(
                 callback.message,
