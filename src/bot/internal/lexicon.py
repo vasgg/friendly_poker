@@ -1,7 +1,7 @@
 # fmt: off
 texts = {
     'abort_game_dialog': 'Abort game {}. Confirm?',
-    'abort_game_reply': 'Game {} aborted.',
+    'abort_game_reply': 'Game {} aborted and removed.',
     'admin_menu': 'Select an action.',
     'admin_game_created': 'Game {} started.',
     'admin_players_added': 'Added {} players to game {}.',

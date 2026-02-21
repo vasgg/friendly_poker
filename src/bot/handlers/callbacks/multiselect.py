@@ -138,14 +138,18 @@ async def multiselect_further_handler(
             )
             await state.update_data(next_game_ratio=1, next_game_host_id=None)
             chosen_users = _filter_ids(data.get("chosen_for_new_game", list()), bot_id)
-            await callback.bot.send_message(
-                chat_id=settings.bot.GROUP_ID,
-                text=texts["game_started_group"].format(
-                    game_id=game.id,
-                    players_count=len(chosen_users),
-                    host_name=html.escape(host.fullname) if host else "Unknown",
-                ),
-            )
+            try:
+                group_msg = await callback.bot.send_message(
+                    chat_id=settings.bot.GROUP_ID,
+                    text=texts["game_started_group"].format(
+                        game_id=game.id,
+                        players_count=len(chosen_users),
+                        host_name=html.escape(host.fullname) if host else "Unknown",
+                    ),
+                )
+                game.message_id = group_msg.message_id
+            except Exception:
+                logger.exception("Game %s: failed to send group start message", game.id)
             for user_id in chosen_users:
                 record = await create_record(
                     game_id=game.id,

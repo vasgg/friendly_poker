@@ -5,7 +5,6 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from bot.controllers.game import abort_game
 from bot.controllers.record import get_remained_players_in_game
 from bot.controllers.user import get_players_from_game
 from bot.handlers.callbacks.common import _edit_or_answer, _filter_users, _get_bot_id
@@ -13,13 +12,13 @@ from bot.internal.callbacks import AbortDialogCbData, FinishGameCbData
 from bot.internal.context import FinalGameAction, KeyboardMode, SinglePlayerActionType
 from bot.internal.keyboards import choose_single_player_kb, skip_photo_kb, users_multiselect_kb
 from bot.internal.lexicon import texts
+from bot.services.game_abort import hard_abort_game
 from bot.services.game_finalization import finalize_game
 from bot.services.photo_reminder import (
     cancel_photo_reminder,
     game_has_photo,
     set_photo_warning,
 )
-from database.models import User
 
 router = Router()
 logger = getLogger(__name__)
@@ -36,12 +35,29 @@ async def abort_game_handler(
         "Game %s aborted by user %s", callback_data.game_id, callback.from_user.id
     )
     cancel_photo_reminder(callback_data.game_id)
-    await abort_game(callback_data.game_id, db_session)
-    players: list[User] = await get_players_from_game(callback_data.game_id, db_session)
-    for player in players:
-        player.games_played -= 1
-        db_session.add(player)
-    await callback.message.answer(text=texts["abort_game_reply"].format(callback_data.game_id))
+    result = await hard_abort_game(callback_data.game_id, callback.bot, db_session)
+
+    group_result = "skipped"
+    if result.start_message_id is None:
+        group_result = "not found"
+    elif result.start_message_deleted is True:
+        group_result = "deleted"
+    elif result.start_message_deleted is False:
+        group_result = f"failed ({result.start_message_delete_error})"
+
+    last_played_source = (
+        f"{result.last_time_played_restored_from_game_id:02d}"
+        if result.last_time_played_restored_from_game_id
+        else "none"
+    )
+
+    text = (
+        f"{texts['abort_game_reply'].format(callback_data.game_id)}\n\n"
+        f"Removed: records={result.records_deleted}, debts={result.debts_deleted}.\n"
+        f"Group message: {group_result}.\n"
+        f"Last played restored from: {last_played_source}."
+    )
+    await callback.message.answer(text=text)
 
 
 async def _do_finalize(

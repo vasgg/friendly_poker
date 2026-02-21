@@ -101,7 +101,9 @@ class Game(Base):
 
 class Record(Base):
     __tablename__ = "records"
-    __table_args__ = (Index("ix_records_game_user", "game_id", "user_id"),)
+    __table_args__ = (
+        Index("ux_records_game_user", "game_id", "user_id", unique=True),
+    )
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     game_id: Mapped[int] = mapped_column(ForeignKey("games.id", ondelete="CASCADE"))
