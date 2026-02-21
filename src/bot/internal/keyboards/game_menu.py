@@ -27,19 +27,23 @@ def game_menu_kb(status: GameStatus | None, is_admin: bool = True) -> InlineKeyb
     match status:
         case GameStatus.ACTIVE:
             builder.button(
-                text=buttons["menu_add_players"],
-                callback_data=GameMenuCbData(action=GameAction.ADD_PLAYERS).pack(),
-            )
-            builder.button(
                 text=buttons["menu_add_funds"],
                 callback_data=GameMenuCbData(action=GameAction.ADD_FUNDS).pack(),
                 style=ButtonStyle.SUCCESS,
+            )
+            builder.button(
+                text=buttons["menu_add_players"],
+                callback_data=GameMenuCbData(action=GameAction.ADD_PLAYERS).pack(),
             )
             if is_admin:
                 builder.button(
                     text=buttons["menu_statistics"],
                     callback_data=GameMenuCbData(action=GameAction.STATISTICS).pack(),
                 )
+            builder.button(
+                text=buttons["menu_extras"],
+                callback_data=GameMenuCbData(action=GameAction.NEXT_GAME_SETTINGS).pack(),
+            )
             builder.button(
                 text=buttons["menu_finish_game"],
                 callback_data=GameMenuCbData(action=GameAction.FINISH_GAME).pack(),
@@ -49,10 +53,6 @@ def game_menu_kb(status: GameStatus | None, is_admin: bool = True) -> InlineKeyb
                 text=buttons["menu_abort_game"],
                 callback_data=GameMenuCbData(action=GameAction.ABORT_GAME).pack(),
                 style=ButtonStyle.DANGER,
-            )
-            builder.button(
-                text=buttons["menu_new_year"],
-                callback_data=GameMenuCbData(action=GameAction.NEXT_GAME_SETTINGS).pack(),
             )
         case _:
             builder.button(
@@ -66,7 +66,7 @@ def game_menu_kb(status: GameStatus | None, is_admin: bool = True) -> InlineKeyb
                     callback_data=GameMenuCbData(action=GameAction.STATISTICS).pack(),
                 )
             builder.button(
-                text=buttons["menu_new_year"],
+                text=buttons["menu_extras"],
                 callback_data=GameMenuCbData(action=GameAction.NEXT_GAME_SETTINGS).pack(),
             )
     builder.adjust(1)

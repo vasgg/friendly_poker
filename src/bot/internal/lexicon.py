@@ -164,7 +164,7 @@ buttons = {
     'menu_abort_game': 'Abort game',
     'menu_start_game': 'Start game',
     'menu_statistics': 'Stats',
-    'menu_new_year': 'Extras',
+    'menu_extras': 'Extras',
     'menu_select_ratio': 'Set ratio',
     'menu_select_yearly_stats': 'Yearly stats',
     'menu_delete_player': 'Delete player',
