@@ -52,6 +52,10 @@ async def game_menu_handler(
     db_session: AsyncSession,
 ) -> None:
     await callback.answer()
+    if not user.is_admin:
+        await callback.message.answer(text=texts["insufficient_privileges"])
+        return
+
     logger.debug(
         "GameMenu: action=%s user_id=%s", callback_data.action, callback.from_user.id
     )
@@ -118,37 +122,28 @@ async def game_menu_handler(
                 reply_markup=mode_selector_kb(active_game.id),
             )
         case GameAction.STATISTICS:
-            if not user.is_admin:
-                await callback.message.answer(text=texts["insufficient_privileges"])
-                return
             summary, players = await get_all_time_stats(db_session)
             report = generate_all_time_stats_report(summary, players)
             await callback.message.answer(text=report)
         case GameAction.NEXT_GAME_SETTINGS:
-            if user.is_admin:
-                await _edit_or_answer(
-                    callback.message,
-                    text=texts["admin_next_game_menu"],
-                    reply_markup=next_game_menu_kb(),
-                )
+            await _edit_or_answer(
+                callback.message,
+                text=texts["admin_next_game_menu"],
+                reply_markup=next_game_menu_kb(),
+            )
         case GameAction.SELECT_RATIO:
-            if user.is_admin:
-                await _edit_or_answer(
-                    callback.message,
-                    text=texts["select_mode_prompt"],
-                    reply_markup=select_ratio_kb(),
-                )
+            await _edit_or_answer(
+                callback.message,
+                text=texts["select_mode_prompt"],
+                reply_markup=select_ratio_kb(),
+            )
         case GameAction.SELECT_YEARLY_STATS:
-            if user.is_admin:
-                await _edit_or_answer(
-                    callback.message,
-                    text=texts["yearly_stats_confirm"],
-                    reply_markup=yearly_stats_confirm_kb(),
-                )
+            await _edit_or_answer(
+                callback.message,
+                text=texts["yearly_stats_confirm"],
+                reply_markup=yearly_stats_confirm_kb(),
+            )
         case GameAction.DELETE_PLAYER:
-            if not user.is_admin:
-                await callback.message.answer(text=texts["insufficient_privileges"])
-                return
             players = await get_non_admin_users(
                 db_session,
                 exclude_ids={callback.from_user.id, bot_id},

@@ -1,4 +1,5 @@
 import logging
+from decimal import ROUND_HALF_UP, Decimal
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -131,8 +132,8 @@ async def update_net_profit_and_roi(game_id: int, db_session: AsyncSession):
             net_profit = record.buy_out - record.buy_in
             record.net_profit = net_profit
             if record.buy_in > 0:
-                roi = (net_profit / record.buy_in) * 100
-                record.ROI = round(roi, 2)
+                roi = (Decimal(net_profit) * Decimal(100)) / Decimal(record.buy_in)
+                record.ROI = roi.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
             else:
                 record.ROI = None
             db_session.add(record)
@@ -153,7 +154,7 @@ async def get_mvp(game_id: int, db_session: AsyncSession):
 
 async def get_roi_from_game_by_player_id(
     game_id: int, player_id: int, db_session: AsyncSession
-) -> float | None:
+) -> Decimal | None:
     query = select(Record.ROI).where(
         Record.game_id == game_id, Record.user_id == player_id
     )

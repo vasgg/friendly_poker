@@ -25,6 +25,7 @@ from bot.internal.context import Amount, KeyboardMode, RecordUpdateMode
 from bot.internal.keyboards import users_multiselect_kb
 from bot.internal.lexicon import texts
 from bot.services.photo_reminder import schedule_photo_reminder
+from database.models import User
 
 router = Router()
 logger = getLogger(__name__)
@@ -34,10 +35,15 @@ logger = getLogger(__name__)
 async def players_multiselect_handler(
     callback: CallbackQuery,
     callback_data: PlayerCbData,
+    user: User,
     state: FSMContext,
     db_session: AsyncSession,
 ) -> None:
     await callback.answer()
+    if not user.is_admin:
+        await callback.message.answer(text=texts["insufficient_privileges"])
+        return
+
     bot_id = await _get_bot_id(callback.bot)
     if callback_data.player_id == bot_id:
         return
@@ -94,10 +100,15 @@ async def players_multiselect_handler(
 async def multiselect_further_handler(
     callback: CallbackQuery,
     callback_data: MultiselectFurtherCbData,
+    user: User,
     state: FSMContext,
     db_session: AsyncSession,
 ) -> None:
     await callback.answer()
+    if not user.is_admin:
+        await callback.message.answer(text=texts["insufficient_privileges"])
+        return
+
     logger.debug(
         "MultiselectFurther: mode=%s game_id=%s user_id=%s",
         callback_data.mode,
@@ -157,10 +168,10 @@ async def multiselect_further_handler(
                     db_session=db_session,
                     flush=False,
                 )
-                user = users_by_id.get(user_id)
-                if user:
-                    user.last_time_played = True
-                    user.games_played += 1
+                selected_user = users_by_id.get(user_id)
+                if selected_user:
+                    selected_user.last_time_played = True
+                    selected_user.games_played += 1
                 db_session.add(record)
             for user in users:
                 if user.id not in chosen_users:
@@ -182,10 +193,10 @@ async def multiselect_further_handler(
                     db_session=db_session,
                     flush=False,
                 )
-                user = users_by_id.get(user_id)
-                if user:
-                    user.last_time_played = True
-                    user.games_played += 1
+                selected_user = users_by_id.get(user_id)
+                if selected_user:
+                    selected_user.last_time_played = True
+                    selected_user.games_played += 1
                 db_session.add(record)
             await db_session.flush()
             text = texts["admin_players_added"].format(
@@ -207,11 +218,11 @@ async def multiselect_further_handler(
                     amount=Amount.ONE_THOUSAND,
                     db_session=db_session,
                 )
-                user = users_by_id.get(user_id)
+                selected_user = users_by_id.get(user_id)
                 record = await get_record(callback_data.game_id, user_id, db_session)
-                if user:
+                if selected_user:
                     buy_in = record.buy_in if record else 0
-                    names.append(f"{html.escape(user.fullname)} ({buy_in})")
+                    names.append(f"{html.escape(selected_user.fullname)} ({buy_in})")
             text = texts["admin_1000_added_to_players"].format(
                 callback_data.game_id, len(chosen_users), "\n".join(names)
             )

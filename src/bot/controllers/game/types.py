@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from decimal import Decimal
 
 
 @dataclass(slots=True)
@@ -9,7 +10,7 @@ class YearlySummary:
     biggest_pot_game_id: int | None
     total_buy_in: int
     total_duration_seconds: int
-    best_single_game_roi: float | None
+    best_single_game_roi: Decimal | None
     best_single_game_roi_names: list[str]
     top_mvp_names: list[str]
     top_mvp_count: int
@@ -25,5 +26,4 @@ class YearlyPlayerStats:
     total_buy_in: int
     total_buy_out: int
     net: int
-    roi: float | None
-
+    roi: Decimal | None

@@ -1,4 +1,5 @@
 import logging
+from decimal import ROUND_HALF_UP, Decimal
 
 from sqlalchemy import extract, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -70,7 +71,10 @@ async def _get_stats(
     players_stats: list[YearlyPlayerStats] = []
     for user_id, fullname, games_played, buy_in, buy_out in players_rows:
         net = (buy_out or 0) - (buy_in or 0)
-        roi = round((net / buy_in) * 100, 2) if buy_in else None
+        roi = None
+        if buy_in:
+            roi_raw = (Decimal(net) * Decimal(100)) / Decimal(buy_in)
+            roi = roi_raw.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
         players_stats.append(
             YearlyPlayerStats(
                 user_id=user_id,

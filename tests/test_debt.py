@@ -1,5 +1,6 @@
-import pytest
 from collections import defaultdict
+
+import pytest
 
 from bot.controllers.debt import equalizer
 

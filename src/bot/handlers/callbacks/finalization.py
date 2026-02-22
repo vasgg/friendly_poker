@@ -19,6 +19,7 @@ from bot.services.photo_reminder import (
     game_has_photo,
     set_photo_warning,
 )
+from database.models import User
 
 router = Router()
 logger = getLogger(__name__)
@@ -28,9 +29,14 @@ logger = getLogger(__name__)
 async def abort_game_handler(
     callback: CallbackQuery,
     callback_data: AbortDialogCbData,
+    user: User,
     db_session: AsyncSession,
 ) -> None:
     await callback.answer()
+    if not user.is_admin:
+        await callback.message.answer(text=texts["insufficient_privileges"])
+        return
+
     logger.info(
         "Game %s aborted by user %s", callback_data.game_id, callback.from_user.id
     )
@@ -84,10 +90,15 @@ async def _do_finalize(
 async def finish_game_handler(
     callback: CallbackQuery,
     callback_data: FinishGameCbData,
+    user: User,
     state: FSMContext,
     db_session: AsyncSession,
 ) -> None:
     await callback.answer()
+    if not user.is_admin:
+        await callback.message.answer(text=texts["insufficient_privileges"])
+        return
+
     logger.debug(
         "FinishGame: action=%s game_id=%s user_id=%s",
         callback_data.action,

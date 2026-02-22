@@ -74,7 +74,11 @@ async def get_users_with_buyout(game_id: int, db_session: AsyncSession) -> list[
     query = (
         select(User)
         .join(Record, User.id == Record.user_id)
-        .where(Record.game_id == game_id, Record.buy_out.isnot(0))
+        .where(
+            Record.game_id == game_id,
+            Record.buy_out.is_not(None),
+            Record.buy_out != 0,
+        )
     )
     result = await db_session.execute(query)
     return list(result.unique().scalars().all())

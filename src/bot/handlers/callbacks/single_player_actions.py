@@ -22,6 +22,7 @@ from bot.internal.callbacks import SinglePlayerActionCbData
 from bot.internal.context import KeyboardMode, SinglePlayerActionType, States
 from bot.internal.keyboards import users_multiselect_kb
 from bot.internal.lexicon import buttons, texts
+from database.models import User
 
 router = Router()
 logger = getLogger(__name__)
@@ -31,10 +32,15 @@ logger = getLogger(__name__)
 async def single_player_handler(
     callback: CallbackQuery,
     callback_data: SinglePlayerActionCbData,
+    user: User,
     state: FSMContext,
     db_session: AsyncSession,
 ) -> None:
     await callback.answer()
+    if not user.is_admin:
+        await callback.message.answer(text=texts["insufficient_privileges"])
+        return
+
     bot_id = await _get_bot_id(callback.bot)
     logger.debug(
         "SinglePlayerAction: mode=%s player_id=%s user_id=%s",

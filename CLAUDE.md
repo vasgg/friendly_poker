@@ -10,10 +10,10 @@ A Telegram bot for managing friendly poker sessions. Tracks games, players, stat
 
 ```bash
 # Install dependencies
-uv sync
+uv sync --group dev
 
-# Initialize database
-uv run create-db
+# Apply database migrations
+uv run alembic upgrade head
 
 # Run the bot
 uv run bot-run
@@ -26,7 +26,7 @@ uv run pytest
 uv run pytest tests/test_debt.py -k "test_name"
 
 # Lint / typecheck
-uv run ruff check src
+uv run ruff check src tests
 uv run ty check src
 ```
 

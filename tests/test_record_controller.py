@@ -1,21 +1,23 @@
 """Tests for the record controller."""
 
+from decimal import Decimal
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.controllers.record import (
-    create_record,
-    get_record,
-    update_record,
-    increase_player_buy_in,
-    get_remained_players_in_game,
     check_game_balance,
+    create_record,
     debt_calculator,
-    update_net_profit_and_roi,
     get_mvp,
+    get_record,
+    get_remained_players_in_game,
     get_roi_from_game_by_player_id,
+    increase_player_buy_in,
+    update_net_profit_and_roi,
+    update_record,
 )
 from bot.internal.context import Amount, RecordUpdateMode
-from database.models import User, Game, Record
+from database.models import Game, Record, User
 
 
 class TestCreateRecord:
@@ -326,7 +328,7 @@ class TestUpdateNetProfitAndRoi:
         await db_session.refresh(record)
 
         assert record.net_profit == 500
-        assert record.ROI == 50.0
+        assert record.ROI == Decimal("50.00")
 
 
 class TestGetMvp:
@@ -341,14 +343,14 @@ class TestGetMvp:
             user_id=multiple_users[0].id,
             buy_in=1000,
             buy_out=1500,
-            ROI=50.0,
+            ROI=Decimal("50.00"),
         )
         record2 = Record(
             game_id=sample_game.id,
             user_id=multiple_users[1].id,
             buy_in=1000,
             buy_out=2000,
-            ROI=100.0,
+            ROI=Decimal("100.00"),
         )
         db_session.add_all([record1, record2])
         await db_session.flush()
@@ -375,7 +377,7 @@ class TestGetRoiFromGameByPlayerId:
         record = Record(
             game_id=sample_game.id,
             user_id=multiple_users[0].id,
-            ROI=75.5,
+            ROI=Decimal("75.50"),
         )
         db_session.add(record)
         await db_session.flush()
@@ -384,7 +386,7 @@ class TestGetRoiFromGameByPlayerId:
             sample_game.id, multiple_users[0].id, db_session
         )
 
-        assert result == 75.5
+        assert result == Decimal("75.50")
 
     async def test_returns_none_when_no_record(
         self, db_session: AsyncSession, sample_game: Game
