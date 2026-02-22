@@ -147,7 +147,7 @@ async def debt_handler(
                     )
                 )
             debt.is_paid = True
-            debt.paid_at = datetime.now(UTC)
+            debt.paid_at = datetime.now(UTC).replace(tzinfo=None)
             db_session.add(debt)
             await db_session.flush()
 

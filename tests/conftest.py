@@ -205,7 +205,7 @@ async def game_with_debts(
             debtor_id=multiple_users[2].id,
             amount=300,
             is_paid=True,
-            paid_at=datetime.now(UTC),
+            paid_at=datetime.now(UTC).replace(tzinfo=None),
         ),
     ]
     for debt in debts:

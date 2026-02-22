@@ -229,7 +229,7 @@ class TestGetUnpaidDebtsAsDebtor:
             debtor_id=multiple_users[1].id,
             amount=500,
             is_paid=True,
-            paid_at=datetime.now(UTC),
+            paid_at=datetime.now(UTC).replace(tzinfo=None),
         )
         db_session.add(debt)
         await db_session.flush()
