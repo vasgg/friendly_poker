@@ -8,6 +8,7 @@ Create Date: 2026-02-22 16:05:00
 from __future__ import annotations
 
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 from alembic import op
 
@@ -19,7 +20,13 @@ depends_on = None
 
 
 def upgrade() -> None:
-    game_status = sa.Enum("ACTIVE", "FINISHED", "ABORTED", name="gamestatus")
+    game_status = postgresql.ENUM(
+        "ACTIVE",
+        "FINISHED",
+        "ABORTED",
+        name="gamestatus",
+        create_type=False,
+    )
     game_status.create(op.get_bind(), checkfirst=True)
 
     op.create_table(
@@ -111,5 +118,11 @@ def downgrade() -> None:
 
     op.drop_table("users")
 
-    game_status = sa.Enum("ACTIVE", "FINISHED", "ABORTED", name="gamestatus")
+    game_status = postgresql.ENUM(
+        "ACTIVE",
+        "FINISHED",
+        "ABORTED",
+        name="gamestatus",
+        create_type=False,
+    )
     game_status.drop(op.get_bind(), checkfirst=True)
