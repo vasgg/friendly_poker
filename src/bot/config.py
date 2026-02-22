@@ -1,6 +1,6 @@
 from zoneinfo import ZoneInfo
 
-from pydantic import SecretStr
+from pydantic import SecretStr, model_validator
 from pydantic_settings import BaseSettings
 
 from bot.internal.config_dicts import assign_config_dict
@@ -18,14 +18,25 @@ class BotConfig(BaseSettings):
 
 
 class DBConfig(BaseSettings):
-    FILE_NAME: str
+    FILE_NAME: str | None = None
+    URL: str | None = None
     echo: bool = False
 
     model_config = assign_config_dict(prefix="DB_")
 
     @property
-    def aiosqlite_db_url(self) -> str:
+    def db_url(self) -> str:
+        if self.URL:
+            return self.URL
         return f"sqlite+aiosqlite:///{self.FILE_NAME}.db"
+
+    @model_validator(mode="after")
+    def validate_db_source(self):
+        if self.URL:
+            return self
+        if self.FILE_NAME:
+            return self
+        raise ValueError("Either DB_URL or DB_FILE_NAME must be set")
 
 
 class Settings(BaseSettings):

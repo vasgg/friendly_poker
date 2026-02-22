@@ -8,6 +8,7 @@ dependencies = [
     "aiogram>=3.25.0",
     "aiofiles>=24.1.0",
     "aiosqlite>=0.20.0",
+    "asyncpg>=0.30.0",
     "pydantic>=2.9.2",
     "pydantic-settings>=2.7.0",
     "sqlalchemy>=2.0.36",
@@ -49,3 +50,4 @@ invalid-argument-type = "ignore"
 [project.scripts]
 bot-run = "bot.main:run_main"
 create-db = "database.tables_helper:run_main"
+migrate-sqlite-to-postgres = "database.migrate_sqlite_to_postgres:run_main"
