@@ -1,21 +1,30 @@
 """Shared test fixtures for controller tests."""
 
+import os
+from datetime import UTC, datetime
+
+import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from database.models import Base, User, Game, Record, Debt
 from bot.internal.context import GameStatus
+from database.models import Base, Debt, Game, Record, User
 
 
 @pytest_asyncio.fixture
 async def db_session():
-    """Create an in-memory SQLite database session for testing."""
+    """Create a PostgreSQL database session for testing."""
+    test_db_url = os.getenv("TEST_DB_URL")
+    if not test_db_url:
+        pytest.skip("Set TEST_DB_URL to run database tests")
+
     engine = create_async_engine(
-        "sqlite+aiosqlite:///:memory:",
+        test_db_url,
         echo=False,
     )
 
     async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
 
     async_session_factory = async_sessionmaker(
@@ -26,6 +35,9 @@ async def db_session():
 
     async with async_session_factory() as session:
         yield session
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
 
     await engine.dispose()
 
@@ -132,8 +144,6 @@ async def game_with_debts(
     multiple_users: list[User],
 ) -> tuple[Game, list[Debt]]:
     """Create a finished game with debts."""
-    from datetime import datetime, UTC
-
     debts = [
         Debt(
             game_id=finished_game.id,

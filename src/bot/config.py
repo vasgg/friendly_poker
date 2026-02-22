@@ -1,7 +1,8 @@
 from zoneinfo import ZoneInfo
 
-from pydantic import SecretStr, model_validator
+from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings
+from sqlalchemy.engine import make_url
 
 from bot.internal.config_dicts import assign_config_dict
 
@@ -18,25 +19,29 @@ class BotConfig(BaseSettings):
 
 
 class DBConfig(BaseSettings):
-    FILE_NAME: str | None = None
-    URL: str | None = None
+    URL: SecretStr
     echo: bool = False
 
     model_config = assign_config_dict(prefix="DB_")
 
+    @field_validator("URL")
+    @classmethod
+    def validate_url(cls, value: SecretStr) -> SecretStr:
+        raw = value.get_secret_value()
+        try:
+            parsed = make_url(raw)
+        except Exception as exc:  # pragma: no cover - defensive validation
+            raise ValueError("DB_URL must be a valid SQLAlchemy URL") from exc
+
+        if parsed.get_backend_name() != "postgresql":
+            raise ValueError("DB_URL must use PostgreSQL backend")
+        if parsed.get_driver_name() != "asyncpg":
+            raise ValueError("DB_URL must use asyncpg driver (postgresql+asyncpg://...)")
+        return value
+
     @property
     def db_url(self) -> str:
-        if self.URL:
-            return self.URL
-        return f"sqlite+aiosqlite:///{self.FILE_NAME}.db"
-
-    @model_validator(mode="after")
-    def validate_db_source(self):
-        if self.URL:
-            return self
-        if self.FILE_NAME:
-            return self
-        raise ValueError("Either DB_URL or DB_FILE_NAME must be set")
+        return self.URL.get_secret_value()
 
 
 class Settings(BaseSettings):
