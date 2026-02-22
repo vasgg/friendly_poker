@@ -152,6 +152,7 @@ class TestGamesHostingCount:
             game = Game(
                 admin_id=multiple_users[0].id,
                 host_id=multiple_users[1].id,
+                status=GameStatus.FINISHED,
             )
             db_session.add(game)
         await db_session.flush()
