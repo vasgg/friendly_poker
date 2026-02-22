@@ -13,7 +13,7 @@ clean admin workflows and private‑only commands.
 
 ## Requirements
 - Python 3.12+
-- SQLite (`aiosqlite`) or PostgreSQL (`asyncpg`)
+- PostgreSQL (`asyncpg`)
 - `uv` recommended for dependency management
 
 ## Setup
@@ -24,35 +24,13 @@ clean admin workflows and private‑only commands.
    - `BOT_ADMIN_IBAN` — payment requisites shown in `/info`
    - `BOT_ADMIN_NAME` — name shown in `/info`
    - `BOT_GROUP_ID` — group chat id
-   - `DB_URL` — preferred, full DB URL (for PostgreSQL use `postgresql+asyncpg://user:password@host:5432/dbname`)
-   - `DB_FILE_NAME` — SQLite fallback, file name without `.db` (used only when `DB_URL` is empty)
+   - `DB_URL` — full PostgreSQL URL (`postgresql+asyncpg://user:password@host:5432/dbname`)
    - `BOT_TIMEZONE` — optional, default `Asia/Tbilisi`
 
 ## Run
 ```bash
 uv sync
 uv run bot-run
-```
-
-## SQLite -> PostgreSQL migration
-1. Create backup of SQLite file:
-```bash
-cp poker_bot.db poker_bot.db.backup
-```
-
-2. Set PostgreSQL URL in `.env`:
-```bash
-DB_URL=postgresql+asyncpg://user:password@host:5432/dbname
-```
-
-3. Run migration:
-```bash
-uv run migrate-sqlite-to-postgres --source poker_bot.db
-```
-
-If target tables already contain data and you intentionally want to overwrite them:
-```bash
-uv run migrate-sqlite-to-postgres --source poker_bot.db --truncate-target
 ```
 
 ## Commands
@@ -66,5 +44,6 @@ uv run migrate-sqlite-to-postgres --source poker_bot.db --truncate-target
 ```bash
 uv run ruff check src
 uv run ty check src
+# Set TEST_DB_URL to a dedicated PostgreSQL database before running tests
 uv run pytest
 ```

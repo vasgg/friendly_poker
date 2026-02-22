@@ -15,13 +15,11 @@ uv sync
 # Initialize database
 uv run create-db
 
-# Migrate SQLite data to PostgreSQL
-uv run migrate-sqlite-to-postgres --source poker_bot.db
-
 # Run the bot
 uv run bot-run
 
 # Run tests
+# Set TEST_DB_URL to a dedicated PostgreSQL database first
 uv run pytest
 
 # Run a specific test
@@ -40,8 +38,7 @@ Required in `.env` file (see `example.env`):
 - `BOT_ADMIN_IBAN` - Card/IBAN shown in `/info`
 - `BOT_ADMIN_NAME` - Name shown in `/info`
 - `BOT_GROUP_ID` - Target group ID
-- `DB_URL` - Preferred database URL (`postgresql+asyncpg://...` for Postgres)
-- `DB_FILE_NAME` - SQLite fallback database filename (used when `DB_URL` is empty)
+- `DB_URL` - Database URL (`postgresql+asyncpg://...`)
 - `BOT_TIMEZONE` - Optional (default: `Asia/Tbilisi`)
 
 ## Architecture
@@ -67,7 +64,7 @@ src/
 1. **Middleware pipeline**: UpdatesDumper → DBSession → Auth → Logging
 2. **Router handlers**: Receive Message/CallbackQuery with injected `db_session`, `user`, `state`
 3. **Controllers**: Business logic with async database operations
-4. **Database**: Async SQLAlchemy (`aiosqlite` for SQLite or `asyncpg` for PostgreSQL)
+4. **Database**: Async PostgreSQL via SQLAlchemy + asyncpg
 
 ### Key Components
 
