@@ -1,4 +1,8 @@
 # Friendly Poker Bot
+[![Lint & Types](https://github.com/vasgg/friendly_poker/actions/workflows/lint-and-types.yml/badge.svg)](https://github.com/vasgg/friendly_poker/actions/workflows/lint-and-types.yml)
+[![Migrations](https://github.com/vasgg/friendly_poker/actions/workflows/migrations.yml/badge.svg)](https://github.com/vasgg/friendly_poker/actions/workflows/migrations.yml)
+[![Tests](https://github.com/vasgg/friendly_poker/actions/workflows/tests.yml/badge.svg)](https://github.com/vasgg/friendly_poker/actions/workflows/tests.yml)
+[![Python 3.13.7](https://img.shields.io/badge/Python-3.13.7-3776AB?logo=python&logoColor=white)](pyproject.toml)
 
 Telegram bot for managing friendly poker sessions: track games, debts, and stats with
 clean admin workflows and private‑only commands.
@@ -12,7 +16,7 @@ clean admin workflows and private‑only commands.
 - Commands work only in private chat; group chat is for announcements.
 
 ## Requirements
-- Python 3.12+
+- Python 3.13.7
 - PostgreSQL (`asyncpg`)
 - Alembic (schema migrations)
 - `uv` recommended for dependency management
@@ -49,6 +53,10 @@ uv run ty check src
 # Set TEST_DB_URL to a dedicated PostgreSQL database before running tests
 uv run pytest
 ```
+CI stages:
+- `Lint & Types` runs Ruff and Ty.
+- `Migrations` runs `upgrade -> downgrade base -> upgrade` on ephemeral PostgreSQL 18.2.
+- `Tests` runs pytest on ephemeral PostgreSQL 18.2 with `TEST_DB_URL`.
 
 ## Existing Database Upgrade
 If your PostgreSQL database already exists from pre-Alembic versions:

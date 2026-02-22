@@ -3,7 +3,7 @@ name = "friendly_poker_bot"
 version = "0.2.0"
 description = "Bot for managing friendly poker sessions"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = "==3.13.7"
 dependencies = [
     "alembic>=1.18.4",
     "aiogram>=3.25.0",
@@ -32,7 +32,7 @@ asyncio_default_fixture_loop_scope = "function"
 
 [tool.ruff]
 line-length = 100
-target-version = "py312"
+target-version = "py313"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]

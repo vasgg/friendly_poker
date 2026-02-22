@@ -2,30 +2,77 @@
 
 import os
 from datetime import UTC, datetime
+from pathlib import Path
 
 import pytest
 import pytest_asyncio
+from alembic.config import Config
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+from alembic import command
 from bot.internal.context import GameStatus
-from database.models import Base, Debt, Game, Record, User
+from database.models import Debt, Game, Record, User
+
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+_TRUNCATE_TEST_TABLES_SQL = text(
+    """
+    DO $$
+    DECLARE
+        tables_to_truncate text;
+    BEGIN
+        SELECT string_agg(format('%I', tablename), ', ')
+        INTO tables_to_truncate
+        FROM pg_tables
+        WHERE schemaname = 'public'
+          AND tablename <> 'alembic_version';
+
+        IF tables_to_truncate IS NOT NULL THEN
+            EXECUTE 'TRUNCATE TABLE ' || tables_to_truncate || ' RESTART IDENTITY CASCADE';
+        END IF;
+    END $$;
+    """
+)
+
+
+def _build_alembic_config(test_db_url: str) -> Config:
+    """Build Alembic config pointing to project-local migration scripts."""
+    config = Config(str(_PROJECT_ROOT / "alembic.ini"))
+    config.set_main_option("script_location", str(_PROJECT_ROOT / "alembic"))
+    config.set_main_option("sqlalchemy.url", test_db_url)
+    return config
+
+
+@pytest.fixture(scope="session")
+def migrated_test_db_url() -> str:
+    """Ensure schema is created via Alembic and return test DB URL."""
+    test_db_url = os.getenv("TEST_DB_URL")
+    if not test_db_url:
+        raise pytest.skip.Exception("Set TEST_DB_URL to run database tests")
+
+    previous_db_url = os.environ.get("DB_URL")
+    os.environ["DB_URL"] = test_db_url
+    try:
+        command.upgrade(_build_alembic_config(test_db_url), "head")
+    finally:
+        if previous_db_url is None:
+            os.environ.pop("DB_URL", None)
+        else:
+            os.environ["DB_URL"] = previous_db_url
+
+    return test_db_url
 
 
 @pytest_asyncio.fixture
-async def db_session():
-    """Create a PostgreSQL database session for testing."""
-    test_db_url = os.getenv("TEST_DB_URL")
-    if not test_db_url:
-        pytest.skip("Set TEST_DB_URL to run database tests")
-
+async def db_session(migrated_test_db_url: str):
+    """Create isolated PostgreSQL session on Alembic-managed schema."""
     engine = create_async_engine(
-        test_db_url,
+        migrated_test_db_url,
         echo=False,
     )
 
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-        await conn.run_sync(Base.metadata.create_all)
+        await conn.execute(_TRUNCATE_TEST_TABLES_SQL)
 
     async_session_factory = async_sessionmaker(
         engine,
@@ -33,13 +80,13 @@ async def db_session():
         expire_on_commit=False,
     )
 
-    async with async_session_factory() as session:
-        yield session
-
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-
-    await engine.dispose()
+    try:
+        async with async_session_factory() as session:
+            yield session
+    finally:
+        async with engine.begin() as conn:
+            await conn.execute(_TRUNCATE_TEST_TABLES_SQL)
+        await engine.dispose()
 
 
 @pytest_asyncio.fixture

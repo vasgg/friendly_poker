@@ -1,0 +1,74 @@
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches: [master, main]
+  workflow_dispatch:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18.2
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: friendly_poker_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d friendly_poker_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      TEST_DB_URL: postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/friendly_poker_test
+      DB_URL: postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/friendly_poker_test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13.7"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Sync dependencies
+        run: uv sync --frozen --group dev
+
+      - name: Wait for PostgreSQL
+        run: |
+          uv run python - <<'PY'
+          import asyncio
+          import os
+
+          import asyncpg
+
+
+          async def wait_for_db() -> None:
+              dsn = os.environ["TEST_DB_URL"].replace("+asyncpg", "")
+              for _ in range(60):
+                  try:
+                      conn = await asyncpg.connect(dsn, timeout=2)
+                  except Exception:
+                      await asyncio.sleep(1)
+                      continue
+                  await conn.close()
+                  return
+              raise RuntimeError("PostgreSQL did not become ready in time")
+
+
+          asyncio.run(wait_for_db())
+          PY
+
+      - name: Apply migrations
+        run: uv run alembic upgrade head
+
+      - name: Pytest
+        run: uv run pytest -q
