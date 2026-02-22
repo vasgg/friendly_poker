@@ -18,4 +18,4 @@ class DatabaseConnector:
 
 
 def get_db() -> DatabaseConnector:
-    return DatabaseConnector(url=settings.db.aiosqlite_db_url, echo=settings.db.echo)
+    return DatabaseConnector(url=settings.db.db_url, echo=settings.db.echo)
