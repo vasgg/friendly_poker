@@ -14,6 +14,7 @@ from bot.internal.callbacks import AddFundsOperationType, CustomFundsConfirmCbDa
 from bot.internal.context import KeyboardMode, OperationType, SinglePlayerActionType, States
 from bot.internal.keyboards import choose_single_player_kb, users_multiselect_kb
 from bot.internal.lexicon import texts
+from database.models import User
 
 router = Router()
 logger = getLogger(__name__)
@@ -23,9 +24,14 @@ logger = getLogger(__name__)
 async def add_funds_handler(
     callback: CallbackQuery,
     callback_data: AddFundsOperationType,
+    user: User,
     db_session: AsyncSession,
 ) -> None:
     await callback.answer()
+    if not user.is_admin:
+        await callback.message.answer(text=texts["insufficient_privileges"])
+        return
+
     logger.info(
         "Add funds mode selected: game_id=%s mode=%s user_id=%s",
         callback_data.game_id,
@@ -61,10 +67,15 @@ async def add_funds_handler(
 async def custom_funds_confirm_handler(
     callback: CallbackQuery,
     callback_data: CustomFundsConfirmCbData,
+    user: User,
     state: FSMContext,
     db_session: AsyncSession,
 ) -> None:
     await callback.answer()
+    if not user.is_admin:
+        await callback.message.answer(text=texts["insufficient_privileges"])
+        return
+
     data = await state.get_data()
     player_id = data.get("custom_funds_player_id")
     game_id = data.get("custom_funds_game_id")

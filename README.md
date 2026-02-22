@@ -14,6 +14,7 @@ clean admin workflows and private‑only commands.
 ## Requirements
 - Python 3.12+
 - PostgreSQL (`asyncpg`)
+- Alembic (schema migrations)
 - `uv` recommended for dependency management
 
 ## Setup
@@ -29,7 +30,8 @@ clean admin workflows and private‑only commands.
 
 ## Run
 ```bash
-uv sync
+uv sync --group dev
+uv run alembic upgrade head
 uv run bot-run
 ```
 
@@ -46,4 +48,11 @@ uv run ruff check src
 uv run ty check src
 # Set TEST_DB_URL to a dedicated PostgreSQL database before running tests
 uv run pytest
+```
+
+## Existing Database Upgrade
+If your PostgreSQL database already exists from pre-Alembic versions:
+```bash
+uv run alembic stamp 20260222_0001
+uv run alembic upgrade head
 ```

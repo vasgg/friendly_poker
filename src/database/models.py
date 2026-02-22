@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
+from decimal import Decimal
 
-from sqlalchemy import BigInteger, ForeignKey, Index, Integer, String
+from sqlalchemy import BigInteger, ForeignKey, Index, Integer, Numeric, String, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from bot.internal.context import GameStatus
@@ -64,7 +65,15 @@ class User(Base):
 
 class Game(Base):
     __tablename__ = "games"
-    __table_args__ = (Index("ix_games_status", "status"),)
+    __table_args__ = (
+        Index("ix_games_status", "status"),
+        Index(
+            "ux_games_single_active",
+            "status",
+            unique=True,
+            postgresql_where=text("status = 'ACTIVE'"),
+        ),
+    )
 
     status: Mapped[GameStatus] = mapped_column(default=GameStatus.ACTIVE)
     admin_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"))
@@ -110,7 +119,7 @@ class Record(Base):
     buy_in: Mapped[int | None]
     buy_out: Mapped[int | None]
     net_profit: Mapped[int | None]
-    ROI: Mapped[int | None]
+    ROI: Mapped[Decimal | None] = mapped_column(Numeric(7, 2))
 
     user: Mapped["User"] = relationship(
         "User",
@@ -133,7 +142,11 @@ class Record(Base):
 
 class Debt(Base):
     __tablename__ = "debts"
-    __table_args__ = (Index("ix_debts_game_id", "game_id"),)
+    __table_args__ = (
+        Index("ix_debts_game_id", "game_id"),
+        Index("ix_debts_creditor_id", "creditor_id"),
+        Index("ix_debts_debtor_id", "debtor_id"),
+    )
 
     game_id: Mapped[int] = mapped_column(ForeignKey("games.id"), nullable=False)
     creditor_id: Mapped[int] = mapped_column(ForeignKey("users.id"))

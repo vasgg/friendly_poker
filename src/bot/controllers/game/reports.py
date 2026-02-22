@@ -1,4 +1,5 @@
 import html
+from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -114,7 +115,7 @@ def generate_all_time_stats_report(
 
 
 async def get_group_game_report(
-    game_id: int, name: str, roi: float, db_session: AsyncSession
+    game_id: int, name: str, roi: Decimal, db_session: AsyncSession
 ) -> str:
     game = await get_game_by_id(game_id, db_session)
     if game is None:
@@ -128,4 +129,3 @@ async def get_group_game_report(
         safe_name,
         roi,
     )
-

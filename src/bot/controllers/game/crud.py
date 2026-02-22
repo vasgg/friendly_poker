@@ -2,6 +2,7 @@ import logging
 from datetime import UTC, datetime
 
 from sqlalchemy import select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
@@ -56,7 +57,12 @@ async def create_game(
         ratio=ratio,
     )
     db_session.add(new_game)
-    await db_session.flush()
+    try:
+        await db_session.flush()
+    except IntegrityError:
+        await db_session.rollback()
+        logger.warning("Cannot create game: unique active game constraint violated")
+        return None
     logger.info("New game created: id=%s host_id=%s", new_game.id, new_game.host_id)
     return new_game
 
@@ -90,4 +96,3 @@ async def commit_game_results_to_db(
         )
     )
     await db_session.execute(close_game)
-

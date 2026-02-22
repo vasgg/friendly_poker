@@ -1,6 +1,7 @@
 import logging
 from dataclasses import dataclass
 from datetime import UTC
+from decimal import Decimal
 
 from aiogram import Bot
 from aiogram.fsm.context import FSMContext
@@ -79,7 +80,7 @@ async def calculate_and_save_debts(
 async def determine_mvp(
     game_id: int,
     db_session: AsyncSession,
-) -> tuple[int | None, str | None, float | None]:
+) -> tuple[int | None, str | None, Decimal | None]:
     mvp_id = await get_mvp(game_id, db_session)
     if mvp_id is None:
         logger.warning("No MVP found for game %s", game_id)
@@ -98,7 +99,7 @@ async def send_game_report_to_group(
     bot: Bot,
     game_id: int,
     mvp_fullname: str,
-    mvp_roi: float,
+    mvp_roi: Decimal,
     db_session: AsyncSession,
 ) -> None:
     """Generate and send game report to the group chat."""

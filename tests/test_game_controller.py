@@ -4,21 +4,21 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.controllers.game import (
-    get_active_game,
-    get_game_by_id,
-    create_game,
     abort_game,
     commit_game_results_to_db,
+    create_game,
+    format_duration,
+    format_duration_with_days,
     games_hosting_count,
     games_playing_count,
+    get_active_game,
+    get_game_by_id,
     get_mvp_count,
     get_player_total_buy_in,
     get_player_total_buy_out,
-    format_duration,
-    format_duration_with_days,
 )
 from bot.internal.context import GameStatus
-from database.models import User, Game, Record
+from database.models import Game, Record, User
 
 
 class TestGetActiveGame:
@@ -38,26 +38,26 @@ class TestGetActiveGame:
 
         assert result is None
 
-    async def test_returns_most_recent_when_multiple_active(
+    async def test_returns_active_when_other_games_finished(
         self, db_session: AsyncSession, multiple_users: list[User]
     ):
-        game1 = Game(
+        finished_game = Game(
+            admin_id=multiple_users[0].id,
+            host_id=multiple_users[1].id,
+            status=GameStatus.FINISHED,
+        )
+        active_game = Game(
             admin_id=multiple_users[0].id,
             host_id=multiple_users[1].id,
             status=GameStatus.ACTIVE,
         )
-        game2 = Game(
-            admin_id=multiple_users[0].id,
-            host_id=multiple_users[1].id,
-            status=GameStatus.ACTIVE,
-        )
-        db_session.add_all([game1, game2])
+        db_session.add_all([finished_game, active_game])
         await db_session.flush()
 
         result = await get_active_game(db_session)
 
         assert result is not None
-        assert result.id == game2.id
+        assert result.id == active_game.id
 
 
 class TestGetGameById:
@@ -102,6 +102,18 @@ class TestCreateGame:
         )
 
         assert result.ratio == 2
+
+    async def test_returns_none_when_active_game_exists(
+        self, db_session: AsyncSession, sample_game: Game, multiple_users: list[User]
+    ):
+        result = await create_game(
+            admin_id=multiple_users[0].id,
+            host_id=multiple_users[1].id,
+            db_session=db_session,
+        )
+
+        assert sample_game.status == GameStatus.ACTIVE
+        assert result is None
 
 
 class TestAbortGame:

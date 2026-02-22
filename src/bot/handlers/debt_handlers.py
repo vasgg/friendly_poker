@@ -27,7 +27,7 @@ from bot.internal.keyboards import (
 from bot.internal.lexicon import texts
 from bot.internal.notify_admin import send_message_to_player
 from bot.services.debt_notification import format_username, send_debtor_notification
-from database.models import User
+from database.models import Debt, User
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -44,6 +44,24 @@ def _remove_clicked_button(
         if filtered:
             rows.append(filtered)
     return InlineKeyboardMarkup(inline_keyboard=rows) if rows else None
+
+
+def _is_authorized_debt_actor(
+    *,
+    action: DebtAction,
+    actor_user_id: int,
+    expected_chat_id: int,
+    debt: Debt,
+) -> bool:
+    if actor_user_id != expected_chat_id:
+        return False
+    match action:
+        case DebtAction.MARK_AS_PAID:
+            return actor_user_id == debt.debtor_id
+        case DebtAction.COMPLETE_DEBT | DebtAction.REMIND_DEBTOR | DebtAction.MARK_AS_UNPAID:
+            return actor_user_id == debt.creditor_id
+        case _:
+            return False
 
 
 @router.callback_query(DebtActionCbData.filter())
@@ -63,6 +81,22 @@ async def debt_handler(
     if debt is None:
         logger.warning("Debt not found: debt_id=%s", callback_data.debt_id)
         return
+    if not _is_authorized_debt_actor(
+        action=callback_data.action,
+        actor_user_id=callback.from_user.id,
+        expected_chat_id=callback_data.chat_id,
+        debt=debt,
+    ):
+        logger.warning(
+            "Unauthorized debt action attempt: debt_id=%s action=%s actor=%s expected_chat_id=%s",
+            callback_data.debt_id,
+            callback_data.action,
+            callback.from_user.id,
+            callback_data.chat_id,
+        )
+        await callback.message.answer(text=texts["insufficient_privileges"])
+        return
+
     game = await get_game_by_id(debt.game_id, db_session)
     if game is None:
         logger.warning("Game not found: game_id=%s", debt.game_id)

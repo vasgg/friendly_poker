@@ -6,17 +6,17 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.controllers.debt import (
-    get_debts,
-    get_debts_with_users,
     calculate_debt_amount,
     equalizer,
     flush_debts_to_db,
-    mark_debt_as_paid,
     get_debt_by_id,
-    get_unpaid_debts_as_debtor,
+    get_debts,
+    get_debts_with_users,
     get_unpaid_debts_as_creditor,
+    get_unpaid_debts_as_debtor,
+    mark_debt_as_paid,
 )
-from database.models import User, Game, Debt
+from database.models import Debt, Game, User
 
 
 class TestGetDebts:
@@ -221,7 +221,7 @@ class TestGetUnpaidDebtsAsDebtor:
         finished_game: Game,
         multiple_users: list[User],
     ):
-        from datetime import datetime, UTC
+        from datetime import UTC, datetime
 
         debt = Debt(
             game_id=finished_game.id,

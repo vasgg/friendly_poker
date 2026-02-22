@@ -5,11 +5,13 @@ description = "Bot for managing friendly poker sessions"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "alembic>=1.18.4",
     "aiogram>=3.25.0",
     "aiofiles>=24.1.0",
     "asyncpg>=0.30.0",
     "pydantic>=2.9.2",
     "pydantic-settings>=2.7.0",
+    "ruff>=0.15.1",
     "sqlalchemy>=2.0.36",
     "greenlet>=3.1.1",
 ]
@@ -21,7 +23,6 @@ package = true
 dev = [
     "pytest>=8.3.5",
     "pytest-asyncio>=0.24.0",
-    "ruff>=0.6.0",
     "ty>=0.0.0",
 ]
 

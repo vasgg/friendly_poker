@@ -1,4 +1,5 @@
 import html
+from decimal import ROUND_HALF_UP, Decimal
 
 from aiogram import F, Router
 from aiogram.filters import Command, CommandStart
@@ -90,7 +91,9 @@ async def stats_command(message: Message, user: User, db_session: AsyncSession):
     total_buy_out = await get_player_total_buy_out(user.id, db_session) or 0
     total_net = total_buy_out - total_buy_in
     if total_buy_in > 0:
-        total_roi_value = (total_net / total_buy_in) * 100
+        total_roi_value = ((Decimal(total_net) * Decimal(100)) / Decimal(total_buy_in)).quantize(
+            Decimal("0.01"), rounding=ROUND_HALF_UP
+        )
         total_roi_str = f"{total_roi_value:.2f}%"
     else:
         total_roi_str = "0%" if total_buy_out == 0 else "∞%"
@@ -133,9 +136,9 @@ async def stats_command(message: Message, user: User, db_session: AsyncSession):
         if debts_as_debtor:
             debts_text += texts["stats_debts_you_owe"]
             # Aggregate by creditor
-            creditor_totals: dict[int, tuple[str, float]] = {}
+            creditor_totals: dict[int, tuple[str, Decimal]] = {}
             for debt in debts_as_debtor:
-                amount = float(calculate_debt_amount(debt.amount, debt.game.ratio))
+                amount = calculate_debt_amount(debt.amount, debt.game.ratio)
                 creditor_id = debt.creditor_id
                 if creditor_id in creditor_totals:
                     name, total = creditor_totals[creditor_id]
@@ -148,9 +151,9 @@ async def stats_command(message: Message, user: User, db_session: AsyncSession):
         if debts_as_creditor:
             debts_text += texts["stats_debts_owed_to_you"]
             # Aggregate by debtor
-            debtor_totals: dict[int, tuple[str, float]] = {}
+            debtor_totals: dict[int, tuple[str, Decimal]] = {}
             for debt in debts_as_creditor:
-                amount = float(calculate_debt_amount(debt.amount, debt.game.ratio))
+                amount = calculate_debt_amount(debt.amount, debt.game.ratio)
                 debtor_id = debt.debtor_id
                 if debtor_id in debtor_totals:
                     name, total = debtor_totals[debtor_id]

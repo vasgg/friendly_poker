@@ -1,19 +1,20 @@
 """Tests for the user controller."""
 
 from unittest.mock import MagicMock
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.controllers.user import (
     add_user_to_db,
-    get_user_from_db_by_tg_id,
+    ask_next_question,
     get_all_users,
     get_last_played_users,
     get_players_from_game,
     get_unplayed_users,
+    get_user_from_db_by_tg_id,
     get_users_with_buyout,
-    ask_next_question,
 )
-from database.models import User, Game, Record
+from database.models import Game, Record, User
 
 
 class TestGetUserFromDbByTgId:
