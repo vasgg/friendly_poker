@@ -55,8 +55,9 @@ texts = {
                     '/stats — stats\n'
                     '/admin — admin panel\n\n'
                     '<b>Support</b>\n'
-                    'Support the creator via card transfer:\n'
-                    'Bank of Georgia <b><code>{}</code></b>\n'
+                    'Make a contribution to the author by card transfer:\n'
+                    'Bank of Georgia\n'
+                    '<b><code>{}</code></b>\n'
                     '<b><code>{}</code></b>',
     'insufficient_privileges': 'Not allowed. Admins only.',
     'choose_host': 'Select host.',
