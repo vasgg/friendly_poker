@@ -72,7 +72,7 @@ async def settings_start(
     await message.answer(question)
 
 
-@router.message(Command("info"), F.chat.type == "private")
+@router.message(Command("info"))
 async def info_command(message: Message, settings: Settings) -> None:
     await message.answer(
         text=texts["info_message"].format(
