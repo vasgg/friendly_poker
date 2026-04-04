@@ -40,6 +40,18 @@ async def enter_buy_out(
     if value < 0:
         await message.answer(text=texts["incorrect_buyout_value"])
         return
+    active_game = await get_active_game(db_session)
+    if not active_game or active_game.id != game_id:
+        await state.update_data(player_id=None, game_id=None)
+        await state.set_state()
+        await message.answer(text=texts["game_no_longer_active"].format(game_id))
+        return
+    record = await get_record(game_id, player_id, db_session)
+    if record is None:
+        await state.update_data(player_id=None, game_id=None)
+        await state.set_state()
+        await message.answer(text=texts["game_no_longer_active"].format(game_id))
+        return
     player = await get_user_from_db_by_tg_id(player_id, db_session)
     player_name = html.escape(player.fullname) if player else "Unknown"
     await update_record(
@@ -50,9 +62,7 @@ async def enter_buy_out(
         db_session=db_session,
     )
     await state.set_state()
-    await message.answer(
-        text=texts["buy_out_updated"].format(game_id, player_name, value)
-    )
+    await message.answer(text=texts["buy_out_updated"].format(game_id, player_name, value))
 
 
 @router.message(States.ENTER_CUSTOM_FUNDS)

@@ -1,5 +1,4 @@
 import html
-from contextlib import suppress
 from logging import getLogger
 
 from aiogram import Router
@@ -11,7 +10,13 @@ from bot.config import settings
 from bot.controllers.debt import get_unpaid_debts_as_creditor, get_unpaid_debts_as_debtor
 from bot.controllers.game import get_active_game
 from bot.controllers.user import get_non_admin_users, get_user_from_db_by_tg_id
-from bot.handlers.callbacks.common import _edit_or_answer, _get_bot_id, _paginate_players
+from bot.handlers.callbacks.common import (
+    _edit_or_answer,
+    _edit_reply_markup_or_answer,
+    _edit_reply_markup_or_ignore,
+    _get_bot_id,
+    _paginate_players,
+)
 from bot.internal.callbacks import (
     DeletePlayerCancelCbData,
     DeletePlayerConfirmCbData,
@@ -83,23 +88,15 @@ async def delete_player_page_handler(
         return
     players.sort(key=lambda player: (player.games_played, player.fullname.casefold()))
     page_players, total_pages, page = _paginate_players(players, callback_data.page)
-    try:
-        await callback.message.edit_reply_markup(
-            reply_markup=delete_player_list_kb(
-                players=page_players,
-                page=page,
-                total_pages=total_pages,
-            )
-        )
-    except TelegramBadRequest:
-        await callback.message.answer(
-            text=texts["admin_delete_player_dialog"],
-            reply_markup=delete_player_list_kb(
-                players=page_players,
-                page=page,
-                total_pages=total_pages,
-            ),
-        )
+    await _edit_reply_markup_or_answer(
+        callback.message,
+        reply_markup=delete_player_list_kb(
+            players=page_players,
+            page=page,
+            total_pages=total_pages,
+        ),
+        text=texts["admin_delete_player_dialog"],
+    )
 
 
 @router.callback_query(DeletePlayerCancelCbData.filter())
@@ -278,9 +275,7 @@ async def delete_player_confirm_handler(
                 disable_web_page_preview=True,
             )
         except Exception:
-            logger.exception(
-                "Failed to notify user %s about player removal", recipient_id
-            )
+            logger.exception("Failed to notify user %s about player removal", recipient_id)
 
     report_lines = [
         texts["admin_delete_player_report_header"],
@@ -308,9 +303,7 @@ async def delete_player_confirm_handler(
                 ", ".join(f"{game_id:02d}" for game_id in result.pot_recalculated_games)
             )
         )
-    report_lines.append(
-        texts["admin_delete_player_group_result"].format(html.escape(group_result))
-    )
+    report_lines.append(texts["admin_delete_player_group_result"].format(html.escape(group_result)))
     try:
         await send_message_to_player(
             callback.bot,
@@ -320,9 +313,6 @@ async def delete_player_confirm_handler(
             disable_web_page_preview=True,
         )
     except Exception:
-        logger.exception(
-            "Failed to send admin report for deleted user %s", result.player_id
-        )
-    with suppress(TelegramBadRequest):
-        await callback.message.edit_reply_markup(reply_markup=None)
+        logger.exception("Failed to send admin report for deleted user %s", result.player_id)
+    await _edit_reply_markup_or_ignore(callback.message, reply_markup=None)
     await callback.answer(texts["admin_delete_player_done_popup"])

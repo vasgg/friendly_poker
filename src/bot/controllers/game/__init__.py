@@ -5,6 +5,13 @@ from bot.controllers.game.crud import (
     get_active_game,
     get_game_by_id,
 )
+from bot.controllers.game.next_game_settings import (
+    NextGameSettingsSnapshot,
+    consume_next_game_settings_for_new_game,
+    get_next_game_settings,
+    update_next_game_ratio,
+    update_next_game_yearly_stats,
+)
 from bot.controllers.game.reports import (
     format_duration,
     format_duration_with_days,
@@ -26,8 +33,10 @@ from bot.controllers.game.types import YearlyPlayerStats, YearlySummary
 __all__ = [
     "YearlyPlayerStats",
     "YearlySummary",
+    "NextGameSettingsSnapshot",
     "abort_game",
     "commit_game_results_to_db",
+    "consume_next_game_settings_for_new_game",
     "create_game",
     "format_duration",
     "format_duration_with_days",
@@ -38,10 +47,12 @@ __all__ = [
     "get_active_game",
     "get_all_time_stats",
     "get_game_by_id",
+    "get_next_game_settings",
     "get_group_game_report",
     "get_mvp_count",
     "get_player_total_buy_in",
     "get_player_total_buy_out",
     "get_yearly_stats",
+    "update_next_game_ratio",
+    "update_next_game_yearly_stats",
 ]
-

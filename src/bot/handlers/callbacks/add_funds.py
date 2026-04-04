@@ -38,6 +38,12 @@ async def add_funds_handler(
         callback_data.type,
         callback.from_user.id,
     )
+    active_game = await get_active_game(db_session)
+    if active_game is None or active_game.id != callback_data.game_id:
+        await callback.message.answer(
+            text=texts["game_no_longer_active"].format(callback_data.game_id)
+        )
+        return
     bot_id = await _get_bot_id(callback.bot)
     players = _filter_users(
         await get_players_from_game(callback_data.game_id, db_session), {bot_id}

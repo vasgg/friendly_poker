@@ -45,7 +45,11 @@ async def get_game_by_id(game_id: int, db_session: AsyncSession) -> Game | None:
 
 
 async def create_game(
-    admin_id: int, host_id: int, db_session: AsyncSession, ratio: int = 1
+    admin_id: int,
+    host_id: int,
+    db_session: AsyncSession,
+    ratio: int = 1,
+    send_yearly_stats_on_finish: bool = False,
 ) -> Game | None:
     existing = await get_active_game(db_session)
     if existing is not None:
@@ -55,6 +59,7 @@ async def create_game(
         admin_id=admin_id,
         host_id=host_id,
         ratio=ratio,
+        send_yearly_stats_on_finish=send_yearly_stats_on_finish,
     )
     db_session.add(new_game)
     try:
@@ -63,7 +68,14 @@ async def create_game(
         await db_session.rollback()
         logger.warning("Cannot create game: unique active game constraint violated")
         return None
-    logger.info("New game created: id=%s host_id=%s", new_game.id, new_game.host_id)
+    logger.info(
+        "New game created: id=%s admin_id=%s host_id=%s ratio=%s yearly_stats=%s",
+        new_game.id,
+        new_game.admin_id,
+        new_game.host_id,
+        new_game.ratio,
+        new_game.send_yearly_stats_on_finish,
+    )
     return new_game
 
 

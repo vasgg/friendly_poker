@@ -4,7 +4,6 @@ from datetime import UTC
 from decimal import Decimal
 
 from aiogram import Bot
-from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.config import settings
@@ -28,7 +27,7 @@ from bot.internal.lexicon import texts
 from bot.internal.poll import unpin_current_poll
 from bot.internal.schemas import GameBalanceData
 from bot.services.debt_notification import notify_all_debts
-from bot.services.photo_reminder import cancel_photo_reminder
+from bot.services.photo_reminder import cancel_photo_reminder, clear_photo_warning
 
 logger = logging.getLogger(__name__)
 
@@ -111,17 +110,13 @@ async def send_game_report_to_group(
 async def send_yearly_stats_if_enabled(
     bot: Bot,
     game_id: int,
-    state: FSMContext,
     db_session: AsyncSession,
 ) -> None:
-    """Send yearly stats to group if enabled in state."""
-    data = await state.get_data()
-    if not data.get("next_game_yearly_stats"):
-        return
-
     game = await get_game_by_id(game_id, db_session)
     if game is None:
         logger.warning("Game %s not found for yearly stats", game_id)
+        return
+    if not game.send_yearly_stats_on_finish:
         return
 
     created_at = game.created_at
@@ -133,17 +128,16 @@ async def send_yearly_stats_if_enabled(
     yearly_text = generate_yearly_stats_report(year, summary, players)
 
     await bot.send_message(chat_id=settings.bot.GROUP_ID, text=yearly_text)
-    await state.update_data(next_game_yearly_stats=False)
     logger.info("Yearly stats for %s sent to group", year)
 
 
 async def finalize_game(
     game_id: int,
     bot: Bot,
-    state: FSMContext,
     db_session: AsyncSession,
 ) -> FinalizationResult:
     logger.info("Starting finalization of game %s", game_id)
+    await clear_photo_warning(bot, game_id)
     cancel_photo_reminder(game_id)
 
     # Step 1: Validate balance
@@ -165,9 +159,7 @@ async def finalize_game(
 
     # Step 4: Commit game results to DB
     if results.total_pot is None:
-        logger.error(
-            "Game %s: total pot missing after successful balance validation", game_id
-        )
+        logger.error("Game %s: total pot missing after successful balance validation", game_id)
         return FinalizationResult(
             success=False,
             error_message=texts["check_game_balance_error"],
@@ -193,7 +185,7 @@ async def finalize_game(
 
     # Step 7: Send yearly stats if enabled
     try:
-        await send_yearly_stats_if_enabled(bot, game_id, state, db_session)
+        await send_yearly_stats_if_enabled(bot, game_id, db_session)
     except Exception:
         logger.exception("Game %s: failed to send yearly stats", game_id)
 

@@ -1,10 +1,10 @@
 from logging import getLogger
 
 from aiogram import Router
-from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from bot.controllers.game import get_active_game
 from bot.controllers.record import get_remained_players_in_game
 from bot.controllers.user import get_players_from_game
 from bot.handlers.callbacks.common import _edit_or_answer, _filter_users, _get_bot_id
@@ -16,6 +16,7 @@ from bot.services.game_abort import hard_abort_game
 from bot.services.game_finalization import finalize_game
 from bot.services.photo_reminder import (
     cancel_photo_reminder,
+    clear_photo_warning,
     game_has_photo,
     set_photo_warning,
 )
@@ -36,10 +37,15 @@ async def abort_game_handler(
     if not user.is_admin:
         await callback.message.answer(text=texts["insufficient_privileges"])
         return
+    active_game = await get_active_game(db_session)
+    if active_game is None or active_game.id != callback_data.game_id:
+        await callback.message.answer(
+            text=texts["game_no_longer_active"].format(callback_data.game_id)
+        )
+        return
 
-    logger.info(
-        "Game %s aborted by user %s", callback_data.game_id, callback.from_user.id
-    )
+    logger.info("Game %s aborted by user %s", callback_data.game_id, callback.from_user.id)
+    await clear_photo_warning(callback.bot, callback_data.game_id)
     cancel_photo_reminder(callback_data.game_id)
     result = await hard_abort_game(callback_data.game_id, callback.bot, db_session)
 
@@ -69,14 +75,12 @@ async def abort_game_handler(
 async def _do_finalize(
     callback: CallbackQuery,
     game_id: int,
-    state: FSMContext,
     db_session: AsyncSession,
 ) -> None:
     logger.info("Game %s: starting finalization", game_id)
     result = await finalize_game(
         game_id=game_id,
         bot=callback.bot,
-        state=state,
         db_session=db_session,
     )
     if not result.success and result.error_message:
@@ -91,7 +95,6 @@ async def finish_game_handler(
     callback: CallbackQuery,
     callback_data: FinishGameCbData,
     user: User,
-    state: FSMContext,
     db_session: AsyncSession,
 ) -> None:
     await callback.answer()
@@ -105,6 +108,12 @@ async def finish_game_handler(
         callback_data.game_id,
         callback.from_user.id,
     )
+    active_game = await get_active_game(db_session)
+    if active_game is None or active_game.id != callback_data.game_id:
+        await callback.message.answer(
+            text=texts["game_no_longer_active"].format(callback_data.game_id)
+        )
+        return
     bot_id = await _get_bot_id(callback.bot)
     match callback_data.action:
         case FinalGameAction.ADD_PLAYERS_WITH_0:
@@ -132,9 +141,7 @@ async def finish_game_handler(
                 ),
             )
         case FinalGameAction.FINALIZE_GAME:
-            remained_players = await get_remained_players_in_game(
-                callback_data.game_id, db_session
-            )
+            remained_players = await get_remained_players_in_game(callback_data.game_id, db_session)
             if remained_players:
                 logger.warning(
                     "Game %s: finalization blocked, %d players without buy-out",
@@ -149,14 +156,12 @@ async def finish_game_handler(
                     text=texts["photo_missing_warning"],
                     reply_markup=skip_photo_kb(callback_data.game_id),
                 )
-                set_photo_warning(callback_data.game_id, msg.message_id)
+                set_photo_warning(callback_data.game_id, msg.chat.id, msg.message_id)
             else:
-                await _do_finalize(callback, callback_data.game_id, state, db_session)
+                await _do_finalize(callback, callback_data.game_id, db_session)
         case FinalGameAction.SKIP_PHOTO_AND_FINALIZE:
             await callback.message.delete()
-            remained_players = await get_remained_players_in_game(
-                callback_data.game_id, db_session
-            )
+            remained_players = await get_remained_players_in_game(callback_data.game_id, db_session)
             if remained_players:
                 logger.warning(
                     "Game %s: finalization blocked, %d players without buy-out",
@@ -167,4 +172,4 @@ async def finish_game_handler(
                     texts["remained_players"].format(callback_data.game_id, remained_players)
                 )
             else:
-                await _do_finalize(callback, callback_data.game_id, state, db_session)
+                await _do_finalize(callback, callback_data.game_id, db_session)

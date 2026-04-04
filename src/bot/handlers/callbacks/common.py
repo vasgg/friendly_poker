@@ -22,8 +22,26 @@ def _paginate_players(players: list[User], page: int) -> tuple[list[User], int, 
 async def _edit_or_answer(message, text: str, reply_markup=None) -> None:
     try:
         await message.edit_text(text=text, reply_markup=reply_markup)
-    except TelegramBadRequest:
+    except TelegramBadRequest as exc:
+        if _is_message_not_modified(exc):
+            return
         await message.answer(text=text, reply_markup=reply_markup)
+
+
+async def _edit_reply_markup_or_answer(message, reply_markup, text: str) -> None:
+    try:
+        await message.edit_reply_markup(reply_markup=reply_markup)
+    except TelegramBadRequest as exc:
+        if _is_message_not_modified(exc):
+            return
+        await message.answer(text=text, reply_markup=reply_markup)
+
+
+async def _edit_reply_markup_or_ignore(message, reply_markup) -> None:
+    try:
+        await message.edit_reply_markup(reply_markup=reply_markup)
+    except TelegramBadRequest:
+        return
 
 
 async def _get_bot_id(bot) -> int:
@@ -45,3 +63,6 @@ def _filter_users(users: list[User], exclude_ids: set[int]) -> list[User]:
 def _filter_ids(values: list[int], exclude_id: int) -> list[int]:
     return [value for value in values if value != exclude_id]
 
+
+def _is_message_not_modified(exc: TelegramBadRequest) -> bool:
+    return "message is not modified" in str(exc).lower()

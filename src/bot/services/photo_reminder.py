@@ -10,6 +10,7 @@ from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import Message
 
 from bot.config import settings
+from bot.internal.lexicon import texts
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +28,8 @@ class ReminderInfo:
     game_created_at: datetime
 
 
-_reminders: dict[int, ReminderInfo] = {}
-_photo_warnings: dict[int, int] = {}  # game_id → warning message_id
+_reminders: dict[int, ReminderInfo] = {}  # message_id (start or reminder) → game info
+_photo_warnings: dict[int, tuple[int, int]] = {}  # game_id → (chat_id, message_id)
 
 
 def get_reminder_info(message_id: int) -> ReminderInfo | None:
@@ -39,15 +40,16 @@ def game_has_photo(game_id: int) -> bool:
     return any(Path("photos").glob(f"**/game{game_id}_*"))
 
 
-def set_photo_warning(game_id: int, message_id: int) -> None:
-    _photo_warnings[game_id] = message_id
+def set_photo_warning(game_id: int, chat_id: int, message_id: int) -> None:
+    _photo_warnings[game_id] = (chat_id, message_id)
 
 
 async def clear_photo_warning(bot: Bot, game_id: int) -> None:
-    msg_id = _photo_warnings.pop(game_id, None)
-    if msg_id:
+    warning = _photo_warnings.pop(game_id, None)
+    if warning:
+        chat_id, msg_id = warning
         try:
-            await bot.delete_message(chat_id=settings.bot.GROUP_ID, message_id=msg_id)
+            await bot.delete_message(chat_id=chat_id, message_id=msg_id)
         except TelegramBadRequest:
             logger.debug("Could not delete photo warning message %s", msg_id)
 
@@ -59,6 +61,7 @@ def schedule_photo_reminder(
     admin_username: str | None,
     host_fullname: str,
     game_created_at: datetime,
+    source_message_id: int | None = None,
 ) -> None:
     info = ReminderInfo(
         game_id=game_id,
@@ -67,6 +70,8 @@ def schedule_photo_reminder(
         host_fullname=host_fullname,
         game_created_at=game_created_at,
     )
+    if source_message_id is not None:
+        _reminders[source_message_id] = info
     task = asyncio.create_task(_reminder_task(bot, info))
     _tasks[game_id] = task
     logger.info("Photo reminder scheduled for game %s in %s seconds", game_id, PHOTO_REMINDER_DELAY)
@@ -95,7 +100,10 @@ async def _reminder_task(bot: Bot, info: ReminderInfo) -> None:
             mention = f"@{info.admin_username}"
         else:
             mention = f'<a href="tg://user?id={info.admin_id}">Admin</a>'
-        text = f"Game #{info.game_id}: don't forget to take a photo! {mention}"
+        text = texts["photo_reminder_group"].format(
+            game_id=info.game_id,
+            admin_mention=mention,
+        )
         msg = await bot.send_message(
             chat_id=settings.bot.GROUP_ID,
             text=text,
@@ -110,7 +118,11 @@ async def _reminder_task(bot: Bot, info: ReminderInfo) -> None:
 
 
 async def save_game_photo(bot: Bot, message: Message, info: ReminderInfo) -> str:
-    if message.document and message.document.mime_type and message.document.mime_type.startswith("image/"):
+    if (
+        message.document
+        and message.document.mime_type
+        and message.document.mime_type.startswith("image/")
+    ):
         file_id = message.document.file_id
         original_name = message.document.file_name or ""
         ext = Path(original_name).suffix if original_name else ".jpg"

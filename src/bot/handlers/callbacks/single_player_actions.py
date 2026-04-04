@@ -52,9 +52,7 @@ async def single_player_handler(
         case SinglePlayerActionType.CHOOSE_HOST:
             active_game = await get_active_game(db_session)
             if active_game:
-                logger.warning(
-                    "Attempt to create game while game %s is active", active_game.id
-                )
+                logger.warning("Attempt to create game while game %s is active", active_game.id)
                 await callback.message.answer(text=texts["game_already_active"])
                 return
 
@@ -73,6 +71,12 @@ async def single_player_handler(
                 ),
             )
         case SinglePlayerActionType.ADD_FUNDS:
+            active_game = await get_active_game(db_session)
+            if active_game is None or active_game.id != callback_data.game_id:
+                await callback.message.answer(
+                    text=texts["game_no_longer_active"].format(callback_data.game_id)
+                )
+                return
             await state.update_data(
                 custom_funds_player_id=callback_data.player_id,
                 custom_funds_game_id=callback_data.game_id,
@@ -93,6 +97,12 @@ async def single_player_handler(
             )
             await state.set_state(States.ENTER_CUSTOM_FUNDS)
         case SinglePlayerActionType.SET_BUY_OUT:
+            active_game = await get_active_game(db_session)
+            if active_game is None or active_game.id != callback_data.game_id:
+                await callback.message.answer(
+                    text=texts["game_no_longer_active"].format(callback_data.game_id)
+                )
+                return
             await state.update_data(
                 player_id=callback_data.player_id,
                 game_id=callback_data.game_id,

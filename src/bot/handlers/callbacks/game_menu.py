@@ -9,6 +9,7 @@ from bot.controllers.game import (
     generate_all_time_stats_report,
     get_active_game,
     get_all_time_stats,
+    get_next_game_settings,
 )
 from bot.controllers.user import (
     get_all_users,
@@ -56,9 +57,7 @@ async def game_menu_handler(
         await callback.message.answer(text=texts["insufficient_privileges"])
         return
 
-    logger.debug(
-        "GameMenu: action=%s user_id=%s", callback_data.action, callback.from_user.id
-    )
+    logger.debug("GameMenu: action=%s user_id=%s", callback_data.action, callback.from_user.id)
     bot_id = await _get_bot_id(callback.bot)
     all_users = _filter_users(await get_all_users(db_session), {bot_id})
     match callback_data.action:
@@ -75,7 +74,7 @@ async def game_menu_handler(
             if not active_game:
                 await callback.message.answer(text=texts["no_active_game"])
                 return
-            await state.update_data(chosen_users=list())
+            await state.update_data(chosen_for_add_players=list())
             players_not_in_game = _filter_users(await get_unplayed_users(db_session), {bot_id})
             await _edit_or_answer(
                 callback.message,
@@ -132,16 +131,18 @@ async def game_menu_handler(
                 reply_markup=next_game_menu_kb(),
             )
         case GameAction.SELECT_RATIO:
+            next_game_settings = await get_next_game_settings(db_session)
             await _edit_or_answer(
                 callback.message,
                 text=texts["select_mode_prompt"],
-                reply_markup=select_ratio_kb(),
+                reply_markup=select_ratio_kb(next_game_settings.version),
             )
         case GameAction.SELECT_YEARLY_STATS:
+            next_game_settings = await get_next_game_settings(db_session)
             await _edit_or_answer(
                 callback.message,
                 text=texts["yearly_stats_confirm"],
-                reply_markup=yearly_stats_confirm_kb(),
+                reply_markup=yearly_stats_confirm_kb(next_game_settings.version),
             )
         case GameAction.DELETE_PLAYER:
             players = await get_non_admin_users(
@@ -175,17 +176,7 @@ async def admin_cancel_handler(
     if not user.is_admin:
         await callback.message.answer(text=texts["insufficient_privileges"])
         return
-    data = await state.get_data()
-    saved_ratio = data.get("next_game_ratio")
-    saved_yearly = data.get("next_game_yearly_stats")
     await state.clear()
-    updates = {}
-    if saved_ratio is not None:
-        updates["next_game_ratio"] = saved_ratio
-    if saved_yearly:
-        updates["next_game_yearly_stats"] = saved_yearly
-    if updates:
-        await state.update_data(**updates)
     text, status = await build_admin_menu(db_session)
     await _edit_or_answer(
         callback.message,

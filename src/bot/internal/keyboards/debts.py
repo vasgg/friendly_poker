@@ -12,7 +12,7 @@ async def get_paid_button(debt_id: int, chat_id: int) -> InlineKeyboardMarkup:
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="DEBT PAID",
+                    text=buttons["debt_paid"],
                     callback_data=DebtActionCbData(
                         action=DebtAction.MARK_AS_PAID,
                         debt_id=debt_id,
@@ -30,7 +30,7 @@ async def get_paid_button_confirmation(debt_id: int, chat_id: int) -> InlineKeyb
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="confirm payment",
+                    text=buttons["debt_confirm_payment"],
                     callback_data=DebtActionCbData(
                         action=DebtAction.COMPLETE_DEBT,
                         debt_id=debt_id,
@@ -91,4 +91,3 @@ def debt_stats_kb(has_debts_i_owe: bool, has_debts_owe_me: bool) -> InlineKeyboa
         )
     builder.adjust(2)
     return builder.as_markup()
-

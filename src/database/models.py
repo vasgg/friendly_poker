@@ -1,7 +1,16 @@
 from datetime import UTC, datetime
 from decimal import Decimal
 
-from sqlalchemy import BigInteger, ForeignKey, Index, Integer, Numeric, String, text
+from sqlalchemy import (
+    BigInteger,
+    CheckConstraint,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    text,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from bot.internal.context import GameStatus
@@ -19,9 +28,7 @@ class Base(DeclarativeBase):
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[int] = mapped_column(
-        BigInteger, nullable=False, unique=True, primary_key=True
-    )
+    id: Mapped[int] = mapped_column(BigInteger, nullable=False, unique=True, primary_key=True)
     fullname: Mapped[str]
     username: Mapped[str | None] = mapped_column(String(32))
     is_admin: Mapped[bool] = mapped_column(default=False, server_default="0")
@@ -85,6 +92,10 @@ class Game(Base):
     photo_id: Mapped[str | None]
     duration: Mapped[int | None]
     ratio: Mapped[int] = mapped_column(Integer, default=1)
+    send_yearly_stats_on_finish: Mapped[bool] = mapped_column(
+        default=False,
+        server_default="0",
+    )
 
     admin: Mapped["User"] = relationship(
         "User",
@@ -110,9 +121,7 @@ class Game(Base):
 
 class Record(Base):
     __tablename__ = "records"
-    __table_args__ = (
-        Index("ux_records_game_user", "game_id", "user_id", unique=True),
-    )
+    __table_args__ = (Index("ux_records_game_user", "game_id", "user_id", unique=True),)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     game_id: Mapped[int] = mapped_column(ForeignKey("games.id", ondelete="CASCADE"))
@@ -170,3 +179,15 @@ class Debt(Base):
         foreign_keys=[debtor_id],
         back_populates="debts_as_debtor",
     )
+
+
+class NextGameSettings(Base):
+    __tablename__ = "next_game_settings"
+    __table_args__ = (CheckConstraint("id = 1", name="ck_next_game_settings_singleton"),)
+
+    ratio: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    yearly_stats: Mapped[bool] = mapped_column(default=False, server_default="0")
+    version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    updated_by_admin_id: Mapped[int | None] = mapped_column(BigInteger)
+    updated_by_admin_name: Mapped[str | None]
+    updated_at: Mapped[datetime | None]

@@ -7,7 +7,7 @@ from aiogram.types import CallbackQuery
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.config import settings
-from bot.controllers.game import create_game, get_active_game
+from bot.controllers.game import consume_next_game_settings_for_new_game, get_active_game
 from bot.controllers.record import (
     create_record,
     get_record,
@@ -19,7 +19,12 @@ from bot.controllers.user import (
     get_players_from_game,
     get_unplayed_users,
 )
-from bot.handlers.callbacks.common import _filter_ids, _filter_users, _get_bot_id
+from bot.handlers.callbacks.common import (
+    _edit_reply_markup_or_ignore,
+    _filter_ids,
+    _filter_users,
+    _get_bot_id,
+)
 from bot.internal.callbacks import MultiselectFurtherCbData, PlayerCbData
 from bot.internal.context import Amount, KeyboardMode, RecordUpdateMode
 from bot.internal.keyboards import users_multiselect_kb
@@ -47,6 +52,13 @@ async def players_multiselect_handler(
     bot_id = await _get_bot_id(callback.bot)
     if callback_data.player_id == bot_id:
         return
+    if callback_data.mode != KeyboardMode.NEW_GAME:
+        active_game = await get_active_game(db_session)
+        if active_game is None or active_game.id != callback_data.game_id:
+            await callback.message.answer(
+                text=texts["game_no_longer_active"].format(callback_data.game_id)
+            )
+            return
     data = await state.get_data()
     match callback_data.mode:
         case KeyboardMode.NEW_GAME:
@@ -54,17 +66,13 @@ async def players_multiselect_handler(
             chosen_users = _filter_ids(data.get("chosen_for_new_game", list()), bot_id)
         case KeyboardMode.ADD_PLAYERS:
             users = await get_unplayed_users(db_session)
-            chosen_users = _filter_ids(
-                data.get("chosen_for_add_players", list()), bot_id
-            )
+            chosen_users = _filter_ids(data.get("chosen_for_add_players", list()), bot_id)
         case KeyboardMode.PLAYERS_ADD_1000:
             users = await get_players_from_game(callback_data.game_id, db_session)
             chosen_users = _filter_ids(data.get("chosen_for_add_1000", list()), bot_id)
         case KeyboardMode.PLAYERS_WITH_0:
             users = await get_players_from_game(callback_data.game_id, db_session)
-            chosen_users = _filter_ids(
-                data.get("chosen_for_players_with_0", list()), bot_id
-            )
+            chosen_users = _filter_ids(data.get("chosen_for_players_with_0", list()), bot_id)
         case _:
             raise ValueError("Unexpected mode")
 
@@ -86,7 +94,8 @@ async def players_multiselect_handler(
             await state.update_data(chosen_for_add_1000=chosen_users)
         case KeyboardMode.PLAYERS_WITH_0:
             await state.update_data(chosen_for_players_with_0=chosen_users)
-    await callback.message.edit_reply_markup(
+    await _edit_reply_markup_or_ignore(
+        callback.message,
         reply_markup=users_multiselect_kb(
             players=users,
             mode=callback_data.mode,
@@ -125,30 +134,19 @@ async def multiselect_further_handler(
             if not host_id:
                 await callback.message.answer(text=texts["host_not_selected"])
                 return
-            if await get_active_game(db_session):
-                await callback.message.answer(text=texts["game_already_active"])
-                return
-            ratio = data.get("next_game_ratio", 1)
-            game = await create_game(
+            game, next_game_settings = await consume_next_game_settings_for_new_game(
                 admin_id=callback.from_user.id,
                 host_id=host_id,
-                ratio=ratio,
                 db_session=db_session,
             )
             if game is None:
                 await callback.message.answer(text=texts["game_already_active"])
                 return
+            ratio = next_game_settings.ratio
             host = users_by_id.get(host_id)
-            schedule_photo_reminder(
-                bot=callback.bot,
-                game_id=game.id,
-                admin_id=callback.from_user.id,
-                admin_username=callback.from_user.username,
-                host_fullname=host.fullname if host else "unknown",
-                game_created_at=game.created_at,
-            )
-            await state.update_data(next_game_ratio=1, next_game_host_id=None)
+            await state.update_data(next_game_host_id=None)
             chosen_users = _filter_ids(data.get("chosen_for_new_game", list()), bot_id)
+            group_message_id = None
             try:
                 group_msg = await callback.bot.send_message(
                     chat_id=settings.bot.GROUP_ID,
@@ -156,11 +154,22 @@ async def multiselect_further_handler(
                         game_id=game.id,
                         players_count=len(chosen_users),
                         host_name=html.escape(host.fullname) if host else "Unknown",
+                        ratio=ratio,
                     ),
                 )
                 game.message_id = group_msg.message_id
+                group_message_id = group_msg.message_id
             except Exception:
                 logger.exception("Game %s: failed to send group start message", game.id)
+            schedule_photo_reminder(
+                bot=callback.bot,
+                game_id=game.id,
+                admin_id=callback.from_user.id,
+                admin_username=callback.from_user.username,
+                host_fullname=host.fullname if host else "unknown",
+                game_created_at=game.created_at,
+                source_message_id=group_message_id,
+            )
             for user_id in chosen_users:
                 record = await create_record(
                     game_id=game.id,
@@ -179,12 +188,20 @@ async def multiselect_further_handler(
             await db_session.flush()
             text = texts["admin_game_created"].format(game.id)
             logger.info(
-                "Game %s: %d players added to new game",
+                "Game %s: %d players added to new game with ratio=%s yearly_stats=%s",
                 game.id,
                 len(chosen_users),
+                next_game_settings.ratio,
+                next_game_settings.yearly_stats,
             )
             await state.update_data(chosen_for_new_game=list())
         case KeyboardMode.ADD_PLAYERS:
+            active_game = await get_active_game(db_session)
+            if active_game is None or active_game.id != callback_data.game_id:
+                await callback.message.answer(
+                    text=texts["game_no_longer_active"].format(callback_data.game_id)
+                )
+                return
             chosen_users = data.get("chosen_for_add_players", list())
             for user_id in chosen_users:
                 record = await create_record(
@@ -199,9 +216,7 @@ async def multiselect_further_handler(
                     selected_user.games_played += 1
                 db_session.add(record)
             await db_session.flush()
-            text = texts["admin_players_added"].format(
-                len(chosen_users), callback_data.game_id
-            )
+            text = texts["admin_players_added"].format(len(chosen_users), callback_data.game_id)
             logger.info(
                 "Game %s: %d players added mid-game",
                 callback_data.game_id,
@@ -209,6 +224,12 @@ async def multiselect_further_handler(
             )
             await state.update_data(chosen_for_add_players=list())
         case KeyboardMode.PLAYERS_ADD_1000:
+            active_game = await get_active_game(db_session)
+            if active_game is None or active_game.id != callback_data.game_id:
+                await callback.message.answer(
+                    text=texts["game_no_longer_active"].format(callback_data.game_id)
+                )
+                return
             chosen_users = data.get("chosen_for_add_1000", list())
             names = []
             for user_id in chosen_users:
@@ -233,6 +254,12 @@ async def multiselect_further_handler(
             )
             await state.update_data(chosen_for_add_1000=list())
         case KeyboardMode.PLAYERS_WITH_0:
+            active_game = await get_active_game(db_session)
+            if active_game is None or active_game.id != callback_data.game_id:
+                await callback.message.answer(
+                    text=texts["game_no_longer_active"].format(callback_data.game_id)
+                )
+                return
             chosen_users = data.get("chosen_for_players_with_0", list())
             for user_id in chosen_users:
                 await update_record(
@@ -242,9 +269,7 @@ async def multiselect_further_handler(
                     value=0,
                     db_session=db_session,
                 )
-            text = texts["admin_players_with_0"].format(
-                callback_data.game_id, len(chosen_users)
-            )
+            text = texts["admin_players_with_0"].format(callback_data.game_id, len(chosen_users))
             logger.info(
                 "Game %s: buy-out set to 0 for %d players",
                 callback_data.game_id,

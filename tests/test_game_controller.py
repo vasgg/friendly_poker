@@ -22,9 +22,7 @@ from database.models import Game, Record, User
 
 
 class TestGetActiveGame:
-    async def test_returns_active_game(
-        self, db_session: AsyncSession, sample_game: Game
-    ):
+    async def test_returns_active_game(self, db_session: AsyncSession, sample_game: Game):
         result = await get_active_game(db_session)
 
         assert result is not None
@@ -61,9 +59,7 @@ class TestGetActiveGame:
 
 
 class TestGetGameById:
-    async def test_returns_game_when_exists(
-        self, db_session: AsyncSession, sample_game: Game
-    ):
+    async def test_returns_game_when_exists(self, db_session: AsyncSession, sample_game: Game):
         result = await get_game_by_id(sample_game.id, db_session)
 
         assert result is not None
@@ -76,9 +72,7 @@ class TestGetGameById:
 
 
 class TestCreateGame:
-    async def test_creates_new_game(
-        self, db_session: AsyncSession, multiple_users: list[User]
-    ):
+    async def test_creates_new_game(self, db_session: AsyncSession, multiple_users: list[User]):
         result = await create_game(
             admin_id=multiple_users[0].id,
             host_id=multiple_users[1].id,
@@ -90,6 +84,7 @@ class TestCreateGame:
         assert result.host_id == multiple_users[1].id
         assert result.status == GameStatus.ACTIVE
         assert result.ratio == 1
+        assert result.send_yearly_stats_on_finish is False
 
     async def test_creates_game_with_custom_ratio(
         self, db_session: AsyncSession, multiple_users: list[User]
@@ -102,6 +97,18 @@ class TestCreateGame:
         )
 
         assert result.ratio == 2
+
+    async def test_creates_game_with_yearly_stats_flag(
+        self, db_session: AsyncSession, multiple_users: list[User]
+    ):
+        result = await create_game(
+            admin_id=multiple_users[0].id,
+            host_id=multiple_users[1].id,
+            db_session=db_session,
+            send_yearly_stats_on_finish=True,
+        )
+
+        assert result.send_yearly_stats_on_finish is True
 
     async def test_returns_none_when_active_game_exists(
         self, db_session: AsyncSession, sample_game: Game, multiple_users: list[User]
@@ -117,9 +124,7 @@ class TestCreateGame:
 
 
 class TestAbortGame:
-    async def test_sets_game_status_to_aborted(
-        self, db_session: AsyncSession, sample_game: Game
-    ):
+    async def test_sets_game_status_to_aborted(self, db_session: AsyncSession, sample_game: Game):
         await abort_game(sample_game.id, db_session)
         await db_session.refresh(sample_game)
 
@@ -189,9 +194,7 @@ class TestGamesPlayingCount:
 
 
 class TestGetMvpCount:
-    async def test_returns_mvp_count(
-        self, db_session: AsyncSession, multiple_users: list[User]
-    ):
+    async def test_returns_mvp_count(self, db_session: AsyncSession, multiple_users: list[User]):
         for _ in range(2):
             game = Game(
                 admin_id=multiple_users[0].id,

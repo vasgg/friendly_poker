@@ -17,6 +17,7 @@ from bot.controllers.debt import (
 )
 from bot.controllers.game import get_game_by_id
 from bot.controllers.user import get_user_from_db_by_tg_id
+from bot.handlers.callbacks.common import _edit_reply_markup_or_ignore
 from bot.internal.callbacks import DebtActionCbData, DebtStatsCbData
 from bot.internal.context import DebtAction, DebtStatsView
 from bot.internal.keyboards import (
@@ -111,11 +112,11 @@ async def debt_handler(
     amount = calculate_debt_amount(debt.amount, game.ratio)
     match callback_data.action:
         case DebtAction.MARK_AS_PAID:
-            updated_markup = _remove_clicked_button(
-                callback.message.reply_markup, callback.data
+            updated_markup = _remove_clicked_button(callback.message.reply_markup, callback.data)
+            await _edit_reply_markup_or_ignore(
+                callback.message,
+                reply_markup=updated_markup,
             )
-            with suppress(TelegramBadRequest):
-                await callback.message.edit_reply_markup(reply_markup=updated_markup)
             msg = await send_message_to_player(
                 callback.bot,
                 user_id=creditor.id,
@@ -180,20 +181,20 @@ async def debt_handler(
                 creditor=creditor,
                 db_session=db_session,
             )
-            updated_markup = _remove_clicked_button(
-                callback.message.reply_markup, callback.data
+            updated_markup = _remove_clicked_button(callback.message.reply_markup, callback.data)
+            await _edit_reply_markup_or_ignore(
+                callback.message,
+                reply_markup=updated_markup,
             )
-            with suppress(TelegramBadRequest):
-                await callback.message.edit_reply_markup(reply_markup=updated_markup)
             if sent:
-                await callback.message.answer(
-                    texts["debt_remind_sent"].format(debtor_username)
-                )
+                await callback.message.answer(texts["debt_remind_sent"].format(debtor_username))
             else:
                 await callback.message.answer(texts["bot_blocked_by_user"])
             logger.info(
                 "Debt %s reminder sent to debtor %s by creditor %s",
-                debt.id, debtor.id, creditor.id,
+                debt.id,
+                debtor.id,
+                creditor.id,
             )
 
 
@@ -216,7 +217,11 @@ async def debt_stats_handler(
         for debt in debts:
             amount = calculate_debt_amount(debt.amount, debt.game.ratio)
             creditor_name = debt.creditor.fullname
-            game_date = debt.game.created_at.replace(tzinfo=UTC).astimezone(settings.bot.TIMEZONE).strftime("%d.%m.%Y")
+            game_date = (
+                debt.game.created_at.replace(tzinfo=UTC)
+                .astimezone(settings.bot.TIMEZONE)
+                .strftime("%d.%m.%Y")
+            )
             response += texts["stats_debt_line"].format(
                 debt.game_id, game_date, amount, html.escape(creditor_name)
             )
@@ -230,7 +235,11 @@ async def debt_stats_handler(
         for debt in debts:
             amount = calculate_debt_amount(debt.amount, debt.game.ratio)
             debtor_name = debt.debtor.fullname
-            game_date = debt.game.created_at.replace(tzinfo=UTC).astimezone(settings.bot.TIMEZONE).strftime("%d.%m.%Y")
+            game_date = (
+                debt.game.created_at.replace(tzinfo=UTC)
+                .astimezone(settings.bot.TIMEZONE)
+                .strftime("%d.%m.%Y")
+            )
             response += texts["stats_debt_line"].format(
                 debt.game_id, game_date, amount, html.escape(debtor_name)
             )
