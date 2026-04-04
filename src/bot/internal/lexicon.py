@@ -88,6 +88,7 @@ texts = {
     'check_game_balance_error': 'Balance check failed. Try again.',
     'game_started_group': 'Game <b>{game_id:02d}</b> started with <b>{players_count}</b> players.\n'
                           'Host: <b>{host_name}</b>.\n'
+                          'Admin: <b>{admin_name}</b>.\n'
                           'Ratio: <b>x{ratio}</b>.',
     'finish_game_dialog': 'Select an action.',
     'buy_out_updated': 'Game {}. {} BUY-OUT set to {}.',

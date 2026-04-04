@@ -241,7 +241,7 @@ async def test_multiselect_new_game_uses_shared_settings_snapshot(monkeypatch):
         message=AsyncMock(),
         from_user=SimpleNamespace(id=1, username="admin"),
     )
-    user = SimpleNamespace(is_admin=True)
+    user = SimpleNamespace(is_admin=True, fullname="Admin Boss")
     callback_data = SimpleNamespace(mode=KeyboardMode.NEW_GAME, game_id=0)
     db_session = SimpleNamespace(add=Mock(), flush=AsyncMock())
 
@@ -254,6 +254,7 @@ async def test_multiselect_new_game_uses_shared_settings_snapshot(monkeypatch):
     )
 
     group_message = callback.bot.send_message.await_args.kwargs["text"]
+    assert "Admin: <b>Admin Boss</b>." in group_message
     assert "Ratio: <b>x2</b>." in group_message
     assert "next_game_ratio" not in state.data
     assert state.data["next_game_host_id"] is None

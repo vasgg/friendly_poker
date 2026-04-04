@@ -154,6 +154,7 @@ async def multiselect_further_handler(
                         game_id=game.id,
                         players_count=len(chosen_users),
                         host_name=html.escape(host.fullname) if host else "Unknown",
+                        admin_name=html.escape(user.fullname),
                         ratio=ratio,
                     ),
                 )
