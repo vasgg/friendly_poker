@@ -66,7 +66,7 @@ async def unpin_current_poll(bot: Bot, group_id: int) -> None:
 def _next_friday_13(now: datetime) -> datetime:
     now = now.astimezone(TZ)
     target_t = time(hour=13, tzinfo=TZ)
-    days_ahead = (4 - now.weekday()) % 7
+    days_ahead = (3 - now.weekday()) % 7
     candidate = datetime.combine(now.date() + timedelta(days=days_ahead), target_t)
     if candidate <= now:
         candidate += timedelta(days=7)
