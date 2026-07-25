@@ -9,7 +9,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from bot.controllers.game import get_active_game
 from bot.controllers.record import get_record, increase_player_buy_in
 from bot.controllers.user import get_players_from_game, get_user_from_db_by_tg_id
-from bot.handlers.callbacks.common import _edit_or_answer, _filter_users, _get_bot_id
+from bot.handlers.callbacks.common import (
+    _edit_or_answer,
+    _edit_reply_markup_or_ignore,
+    _filter_users,
+    _get_bot_id,
+)
 from bot.internal.callbacks import AddFundsOperationType, CustomFundsConfirmCbData
 from bot.internal.context import KeyboardMode, OperationType, SinglePlayerActionType, States
 from bot.internal.keyboards import choose_single_player_kb, users_multiselect_kb
@@ -82,6 +87,7 @@ async def custom_funds_confirm_handler(
         await callback.message.answer(text=texts["insufficient_privileges"])
         return
 
+    await _edit_reply_markup_or_ignore(callback.message, reply_markup=None)
     data = await state.get_data()
     player_id = data.get("custom_funds_player_id")
     game_id = data.get("custom_funds_game_id")

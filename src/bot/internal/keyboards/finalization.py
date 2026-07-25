@@ -2,7 +2,11 @@ from aiogram.enums import ButtonStyle
 from aiogram.types import InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from bot.internal.callbacks import CancelCbData, FinishGameCbData
+from bot.internal.callbacks import (
+    BuyOutResultCancelCbData,
+    CancelCbData,
+    FinishGameCbData,
+)
 from bot.internal.context import FinalGameAction
 from bot.internal.lexicon import buttons
 
@@ -39,6 +43,24 @@ def finish_game_kb(game_id: int) -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
+def buy_out_updated_kb(game_id: int) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text=buttons["add_players_buyout"],
+        callback_data=FinishGameCbData(
+            action=FinalGameAction.ADD_PLAYERS_BUYOUT, game_id=game_id
+        ).pack(),
+        style=ButtonStyle.PRIMARY,
+    )
+    builder.button(
+        text=buttons["cancel"],
+        callback_data=BuyOutResultCancelCbData().pack(),
+        style=ButtonStyle.DANGER,
+    )
+    builder.adjust(2)
+    return builder.as_markup()
+
+
 def skip_photo_kb(game_id: int) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(
@@ -49,4 +71,3 @@ def skip_photo_kb(game_id: int) -> InlineKeyboardMarkup:
         style=ButtonStyle.DANGER,
     )
     return builder.as_markup()
-

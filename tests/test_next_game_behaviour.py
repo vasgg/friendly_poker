@@ -20,8 +20,17 @@ from bot.controllers.game import (
     update_next_game_yearly_stats,
 )
 from bot.handlers import photo_handler, states_handler
-from bot.handlers.callbacks import common, finalization, multiselect, next_game_settings
-from bot.internal.context import FinalGameAction, KeyboardMode
+from bot.handlers.callbacks import (
+    add_funds,
+    common,
+    finalization,
+    multiselect,
+    next_game_settings,
+)
+from bot.internal.callbacks import BuyOutResultCancelCbData, FinishGameCbData
+from bot.internal.context import FinalGameAction, KeyboardMode, RecordUpdateMode
+from bot.internal.keyboards import buy_out_updated_kb
+from bot.internal.lexicon import buttons
 from bot.services import game_finalization, photo_reminder
 
 
@@ -53,6 +62,7 @@ async def test_next_game_settings_singleton_defaults(db_session):
 
 
 async def test_next_game_ratio_update_rejects_stale_version(db_session):
+    await get_next_game_settings(db_session)
     first_update = await update_next_game_ratio(
         ratio=3,
         expected_version=1,
@@ -82,6 +92,7 @@ async def test_next_game_settings_are_consumed_by_one_new_game(
     db_session,
     multiple_users,
 ):
+    await get_next_game_settings(db_session)
     ratio_update = await update_next_game_ratio(
         ratio=4,
         expected_version=1,
@@ -136,6 +147,7 @@ async def test_next_game_ratio_confirm_logs_admin_and_ratio(monkeypatch, caplog)
 
     monkeypatch.setattr(next_game_settings, "_edit_or_answer", edit_or_answer)
     monkeypatch.setattr(next_game_settings, "update_next_game_ratio", fake_update_next_game_ratio)
+    monkeypatch.setattr(next_game_settings.logger, "disabled", False)
     caplog.set_level(logging.INFO, logger=next_game_settings.logger.name)
 
     await next_game_settings.next_game_ratio_confirm_handler(
@@ -188,6 +200,54 @@ async def test_next_game_yearly_stats_confirm_can_disable(monkeypatch):
     assert (
         edit_or_answer.await_args.kwargs["text"] == next_game_settings.texts["yearly_stats_unset"]
     )
+
+
+async def test_custom_funds_confirm_removes_keyboard_for_yes_and_no(monkeypatch):
+    edit_reply_markup = AsyncMock()
+    monkeypatch.setattr(add_funds, "_edit_reply_markup_or_ignore", edit_reply_markup)
+    monkeypatch.setattr(
+        add_funds,
+        "get_active_game",
+        AsyncMock(return_value=SimpleNamespace(id=7)),
+    )
+    monkeypatch.setattr(
+        add_funds,
+        "get_record",
+        AsyncMock(return_value=SimpleNamespace(buy_in=1500)),
+    )
+    monkeypatch.setattr(
+        add_funds,
+        "get_user_from_db_by_tg_id",
+        AsyncMock(return_value=SimpleNamespace(fullname="Player")),
+    )
+    monkeypatch.setattr(add_funds, "increase_player_buy_in", AsyncMock())
+    monkeypatch.setattr(add_funds, "_edit_or_answer", AsyncMock())
+
+    for confirm in (True, False):
+        callback = SimpleNamespace(
+            answer=AsyncMock(),
+            message=AsyncMock(),
+            from_user=SimpleNamespace(id=77),
+        )
+        state = FakeState(
+            {
+                "custom_funds_player_id": 10,
+                "custom_funds_game_id": 7,
+                "custom_funds_amount": 500,
+            }
+        )
+
+        await add_funds.custom_funds_confirm_handler(
+            callback=callback,
+            callback_data=SimpleNamespace(confirm=confirm),
+            user=SimpleNamespace(is_admin=True),
+            state=state,
+            db_session=object(),
+        )
+
+        edit_reply_markup.assert_awaited_with(callback.message, reply_markup=None)
+
+    assert edit_reply_markup.await_count == 2
 
 
 async def test_multiselect_new_game_uses_shared_settings_snapshot(monkeypatch):
@@ -439,6 +499,94 @@ async def test_enter_buy_out_rejects_stale_state(monkeypatch):
     assert state.data["game_id"] is None
     assert state.current_state is None
     states_handler.update_record.assert_not_awaited()
+
+
+async def test_enter_buy_out_shows_follow_up_keyboard(monkeypatch):
+    state = FakeState({"player_id": 10, "game_id": 58})
+    message = AsyncMock()
+    message.text = "5610"
+    player = SimpleNamespace(fullname="vas g")
+
+    monkeypatch.setattr(
+        states_handler,
+        "get_active_game",
+        AsyncMock(return_value=SimpleNamespace(id=58)),
+    )
+    monkeypatch.setattr(
+        states_handler,
+        "get_record",
+        AsyncMock(return_value=SimpleNamespace()),
+    )
+    monkeypatch.setattr(
+        states_handler,
+        "get_user_from_db_by_tg_id",
+        AsyncMock(return_value=player),
+    )
+    update_record = AsyncMock()
+    monkeypatch.setattr(states_handler, "update_record", update_record)
+    db_session = object()
+
+    await states_handler.enter_buy_out(
+        message=message,
+        state=state,
+        db_session=db_session,
+    )
+
+    update_record.assert_awaited_once_with(
+        game_id=58,
+        user_id=10,
+        mode=RecordUpdateMode.UPDATE_BUY_OUT,
+        value=5610,
+        db_session=db_session,
+    )
+    answer = message.answer.await_args.kwargs
+    assert answer["text"] == "Game 58. vas g BUY-OUT set to 5610."
+    assert answer["reply_markup"] == buy_out_updated_kb(58)
+
+
+async def test_buy_out_updated_keyboard_has_set_and_cancel_buttons():
+    keyboard = buy_out_updated_kb(58)
+    assert len(keyboard.inline_keyboard) == 1
+    assert len(keyboard.inline_keyboard[0]) == 2
+    set_buy_out_button, cancel_button = [
+        button for row in keyboard.inline_keyboard for button in row
+    ]
+
+    assert [set_buy_out_button.text, cancel_button.text] == [
+        buttons["add_players_buyout"],
+        buttons["cancel"],
+    ]
+    assert [set_buy_out_button.style, cancel_button.style] == [
+        "primary",
+        "danger",
+    ]
+    assert (
+        set_buy_out_button.callback_data
+        == FinishGameCbData(
+            action=FinalGameAction.ADD_PLAYERS_BUYOUT,
+            game_id=58,
+        ).pack()
+    )
+    assert cancel_button.callback_data == BuyOutResultCancelCbData().pack()
+
+
+async def test_buy_out_result_cancel_removes_only_keyboard(monkeypatch):
+    callback = SimpleNamespace(
+        answer=AsyncMock(),
+        message=AsyncMock(),
+    )
+    edit_reply_markup = AsyncMock()
+    monkeypatch.setattr(finalization, "_edit_reply_markup_or_ignore", edit_reply_markup)
+
+    await finalization.buy_out_result_cancel_handler(
+        callback=callback,
+        user=SimpleNamespace(is_admin=True),
+    )
+
+    callback.answer.assert_awaited_once()
+    edit_reply_markup.assert_awaited_once_with(callback.message, reply_markup=None)
+    callback.message.edit_text.assert_not_awaited()
+    callback.message.answer.assert_not_awaited()
 
 
 async def test_clear_photo_warning_uses_original_chat_id():

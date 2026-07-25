@@ -12,7 +12,7 @@ from bot.controllers.game import get_active_game
 from bot.controllers.record import get_record, update_record
 from bot.controllers.user import ask_next_question, get_user_from_db_by_tg_id
 from bot.internal.context import RecordUpdateMode, SettingsForm, States
-from bot.internal.keyboards import custom_funds_confirm_kb
+from bot.internal.keyboards import buy_out_updated_kb, custom_funds_confirm_kb
 from bot.internal.lexicon import ORDER, texts
 from database.models import User
 
@@ -62,7 +62,10 @@ async def enter_buy_out(
         db_session=db_session,
     )
     await state.set_state()
-    await message.answer(text=texts["buy_out_updated"].format(game_id, player_name, value))
+    await message.answer(
+        text=texts["buy_out_updated"].format(game_id, player_name, value),
+        reply_markup=buy_out_updated_kb(game_id),
+    )
 
 
 @router.message(States.ENTER_CUSTOM_FUNDS)

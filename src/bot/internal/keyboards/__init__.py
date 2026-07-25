@@ -11,7 +11,11 @@ from bot.internal.keyboards.delete_player import (
     delete_player_list_kb,
     delete_player_summary_kb,
 )
-from bot.internal.keyboards.finalization import finish_game_kb, skip_photo_kb
+from bot.internal.keyboards.finalization import (
+    buy_out_updated_kb,
+    finish_game_kb,
+    skip_photo_kb,
+)
 from bot.internal.keyboards.game_menu import (
     confirmation_dialog_kb,
     game_menu_kb,
@@ -31,6 +35,7 @@ __all__ = [
     "choose_single_player_kb",
     "confirmation_dialog_kb",
     "custom_funds_confirm_kb",
+    "buy_out_updated_kb",
     "debt_details_i_owe_kb",
     "debt_details_owe_me_kb",
     "debt_stats_kb",
@@ -49,4 +54,3 @@ __all__ = [
     "users_multiselect_kb",
     "yearly_stats_confirm_kb",
 ]
-

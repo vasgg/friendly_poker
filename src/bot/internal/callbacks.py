@@ -51,6 +51,10 @@ class FinishGameCbData(CallbackData, prefix="finish_game"):
     game_id: int
 
 
+class BuyOutResultCancelCbData(CallbackData, prefix="buyout_result_cancel"):
+    pass
+
+
 class DebtActionCbData(CallbackData, prefix="debt_action"):
     action: DebtAction
     debt_id: int

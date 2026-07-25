@@ -7,8 +7,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from bot.controllers.game import get_active_game
 from bot.controllers.record import get_remained_players_in_game
 from bot.controllers.user import get_players_from_game
-from bot.handlers.callbacks.common import _edit_or_answer, _filter_users, _get_bot_id
-from bot.internal.callbacks import AbortDialogCbData, FinishGameCbData
+from bot.handlers.callbacks.common import (
+    _edit_or_answer,
+    _edit_reply_markup_or_ignore,
+    _filter_users,
+    _get_bot_id,
+)
+from bot.internal.callbacks import (
+    AbortDialogCbData,
+    BuyOutResultCancelCbData,
+    FinishGameCbData,
+)
 from bot.internal.context import FinalGameAction, KeyboardMode, SinglePlayerActionType
 from bot.internal.keyboards import choose_single_player_kb, skip_photo_kb, users_multiselect_kb
 from bot.internal.lexicon import texts
@@ -24,6 +33,18 @@ from database.models import User
 
 router = Router()
 logger = getLogger(__name__)
+
+
+@router.callback_query(BuyOutResultCancelCbData.filter())
+async def buy_out_result_cancel_handler(
+    callback: CallbackQuery,
+    user: User,
+) -> None:
+    await callback.answer()
+    if not user.is_admin:
+        await callback.message.answer(text=texts["insufficient_privileges"])
+        return
+    await _edit_reply_markup_or_ignore(callback.message, reply_markup=None)
 
 
 @router.callback_query(AbortDialogCbData.filter())
