@@ -1,5 +1,6 @@
 import logging
-from asyncio import run
+from asyncio import CancelledError, run
+from contextlib import suppress
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
@@ -25,8 +26,6 @@ from database.database_connector import get_db
 
 
 async def main():
-    initial_setup("friendly_poker_bot")
-
     bot = Bot(
         token=settings.bot.TOKEN.get_secret_value(),
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
@@ -64,12 +63,26 @@ async def main():
     )
 
     logging.info("friendly poker bot started")
-    start_weekly_poll_loop(bot, settings.bot.GROUP_ID)
-    await dispatcher.start_polling(bot)
+    poll_task = start_weekly_poll_loop(bot, settings.bot.GROUP_ID)
+    try:
+        await dispatcher.start_polling(bot, close_bot_session=False)
+    finally:
+        # Finish the background request before closing its HTTP session.
+        poll_task.cancel()
+        try:
+            with suppress(CancelledError):
+                await poll_task
+        finally:
+            await bot.session.close()
 
 
 def run_main():
-    run(main())
+    listeners = initial_setup("friendly_poker_bot")
+    try:
+        run(main())
+    finally:
+        for listener in listeners:
+            listener.stop()
 
 
 if __name__ == "__main__":

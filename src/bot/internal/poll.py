@@ -1,6 +1,6 @@
 import json
 import logging
-from asyncio import create_task, sleep
+from asyncio import Task, create_task, sleep
 from datetime import datetime, time, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -8,6 +8,7 @@ from zoneinfo import ZoneInfo
 import aiofiles
 import aiofiles.os
 from aiogram import Bot
+from aiogram.exceptions import TelegramRetryAfter
 
 logger = logging.getLogger(__name__)
 TZ = ZoneInfo("Asia/Tbilisi")
@@ -58,7 +59,9 @@ async def unpin_current_poll(bot: Bot, group_id: int) -> None:
 
         await bot.unpin_chat_message(chat_id=group_id, message_id=message_id)
         await _save_last_pinned_poll_id(group_id, None)
-        logger.info("Unpinned poll message %s in chat %s after game finalization", message_id, group_id)
+        logger.info(
+            "Unpinned poll message %s in chat %s after game finalization", message_id, group_id
+        )
     except Exception:
         logger.exception("Failed to unpin poll in chat %s", group_id)
 
@@ -91,6 +94,7 @@ def _fmt_delta(td: timedelta) -> str:
 
 
 async def _send_poll(bot: Bot, group_id: int) -> None:
+    logger.info("Sending weekly poll to chat %s", group_id)
     msg = await bot.send_poll(
         chat_id=group_id,
         question="Weekly Texas No Limit Hold'em.\nEntrance: 20:00",
@@ -98,6 +102,7 @@ async def _send_poll(bot: Bot, group_id: int) -> None:
         is_anonymous=False,
         allows_multiple_answers=False,
     )
+    logger.info("Sent weekly poll message %s to chat %s", msg.message_id, group_id)
     try:
         prev_id = await _load_last_pinned_poll_id(group_id)
         if prev_id is not None:
@@ -109,18 +114,14 @@ async def _send_poll(bot: Bot, group_id: int) -> None:
                     group_id,
                 )
             except Exception:
-                logger.warning(
-                    "Could not unpin previous poll %s in chat %s", prev_id, group_id
-                )
+                logger.warning("Could not unpin previous poll %s in chat %s", prev_id, group_id)
 
         await bot.pin_chat_message(
             chat_id=group_id,
             message_id=msg.message_id,
             disable_notification=False,
         )
-        logger.info(
-            "Pinned weekly poll message %s in chat %s", msg.message_id, group_id
-        )
+        logger.info("Pinned weekly poll message %s in chat %s", msg.message_id, group_id)
         await _save_last_pinned_poll_id(group_id, msg.message_id)
     except Exception:
         logger.exception("Failed to pin poll message in chat %s", group_id)
@@ -128,23 +129,31 @@ async def _send_poll(bot: Bot, group_id: int) -> None:
 
 async def weekly_poll_loop(bot: Bot, group_id: int) -> None:
     while True:
-        try:
-            now = datetime.now(TZ)
-            target = _next_friday_13(now)
-            sleep_s = (target - now).total_seconds()
-            logger.info(
-                "Next weekly poll at %s (in %s)",
-                target.strftime("%Y-%m-%d %H:%M:%S %Z"),
-                _fmt_delta(target - now),
-            )
-            await sleep(sleep_s)
-            await _send_poll(bot, group_id)
-        except Exception:
-            logger.exception("weekly_poll_loop error")
-            await sleep(5)
+        now = datetime.now(TZ)
+        target = _next_friday_13(now)
+        logger.info(
+            "Next weekly poll at %s (in %s)",
+            target.strftime("%Y-%m-%d %H:%M:%S %Z"),
+            _fmt_delta(target - now),
+        )
+        await sleep((target - now).total_seconds())
+        retry_delay = 5
+        # Keep this occurrence pending after a failure instead of scheduling next week.
+        while True:
+            try:
+                await _send_poll(bot, group_id)
+                break
+            except TelegramRetryAfter as exc:
+                delay = exc.retry_after
+                logger.warning("Weekly poll rate limited; retrying in %s seconds", delay)
+            except Exception:
+                delay = retry_delay
+                logger.exception("Weekly poll failed; retrying in %s seconds", delay)
+            await sleep(delay)
+            retry_delay = min(retry_delay * 2, 300)
 
 
-def start_weekly_poll_loop(bot: Bot, group_id: int):
+def start_weekly_poll_loop(bot: Bot, group_id: int) -> Task[None]:
     now = datetime.now(TZ)
     target = _next_friday_13(now)
     logger.info(

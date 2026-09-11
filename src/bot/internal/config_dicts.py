@@ -2,7 +2,7 @@ import logging.config
 import sys
 from datetime import datetime
 from logging import Formatter
-from logging.handlers import RotatingFileHandler
+from logging.handlers import QueueHandler, QueueListener, RotatingFileHandler
 from pathlib import Path
 
 from pydantic_settings import SettingsConfigDict
@@ -20,11 +20,19 @@ class CustomFormatter(Formatter):
             return super().formatTime(record, datefmt)
 
 
-def initial_setup(app_name: str):
+def initial_setup(app_name: str) -> tuple[QueueListener, ...]:
     Path("logs").mkdir(parents=True, exist_ok=True)
     Path("photos").mkdir(parents=True, exist_ok=True)
     logging_config = get_logging_config(app_name)
     logging.config.dictConfig(logging_config)
+    listeners = []
+    for name in ("file_queue", "console_queue"):
+        handler = logging.getHandlerByName(name)
+        if not isinstance(handler, QueueHandler) or handler.listener is None:
+            raise RuntimeError(f"Logging queue {name} has no listener")
+        handler.listener.start()
+        listeners.append(handler.listener)
+    return tuple(listeners)
 
 
 main_template = {
@@ -54,6 +62,17 @@ def get_logging_config(app_name: str):
             },
         },
         "handlers": {
+            # Separate consumers keep a blocked terminal from delaying file logs.
+            "console_queue": {
+                "class": "logging.handlers.QueueHandler",
+                "handlers": ["stdout", "stderr"],
+                "respect_handler_level": True,
+            },
+            "file_queue": {
+                "class": "logging.handlers.QueueHandler",
+                "handlers": ["file"],
+                "respect_handler_level": True,
+            },
             "stdout": {
                 "class": "logging.StreamHandler",
                 "level": "INFO",
@@ -79,7 +98,7 @@ def get_logging_config(app_name: str):
         "loggers": {
             "root": {
                 "level": "DEBUG",
-                "handlers": ["stdout", "stderr", "file"],
+                "handlers": ["file_queue", "console_queue"],
             },
         },
     }
